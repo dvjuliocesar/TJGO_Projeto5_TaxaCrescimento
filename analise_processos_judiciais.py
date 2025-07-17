@@ -5,15 +5,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns   
 from datetime import datetime
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 # Configurações Iniciais
 plt.style.use('ggplot')
 pd.set_option('display.max_columns', None)
 
 # Carregar dados
-df = pd.read_csv('', 
-                 parse_dates=['data_distribuicao', 'data_baixa']
-                 )
+df = pd.read_csv('')
 
 # Verificar dados
 '''print(df.head())
