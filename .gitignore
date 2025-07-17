@@ -1,0 +1,4 @@
+# Ignorar pastas
+uploads/
+.venv/
+
