@@ -12,8 +12,15 @@ from plotly.subplots import make_subplots
 plt.style.use('ggplot')
 pd.set_option('display.max_columns', None)
 
-# Carregar dados
-df = pd.read_csv('')
+# Carregar e concatenar os dados dos processos judiciais
+dfs = []
+for ano in [2022, 2023, 2024]:
+    try: 
+        df_ano = pd.read_csv(f'processos_{ano}.csv', sep=',', encoding='utf-8')
+        df_ano['ano_arquivo'] = ano  # Adicionar coluna com o ano do arquivo
+        dfs.append(df_ano)
+    except FileNotFoundError:
+        print(f"Arquivo processos_{ano}.csv não encontrado.")
 
 # Verificar dados
 '''print(df.head())
