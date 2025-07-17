@@ -12,11 +12,12 @@ pd.set_option('display.max_columns', None)
 
 # Carregar dados
 df = pd.read_csv('uploads/dados_processos_sigilosos_2022-01-01_a_2025-06-30.csv', 
-                 parse_dates=['data_distribuicao', 'data_baixa'])
+                 parse_dates=['data_distribuicao', 'data_baixa']
+                 )
 
 # Verificar dados
-print(df.head())
-print(df.info())
+'''print(df.head())
+print(df.info())'''
 
 # Tratamento das Colunas de Data
 df['data_distribuicao'] = pd.to_datetime(df['data_distribuicao'], errors='coerce')
@@ -34,15 +35,31 @@ crescimento_geral.columns = ['Ano', 'Total de Processos Sigilosos']
 # Converter ano para inteiro
 crescimento_geral['Ano'] = crescimento_geral['Ano'].astype(int)
 
-
 # Plotar gráfico em barras de crescimento
-plt.figure(figsize=(10, 6))
-sns.barplot(x='Ano', y='Total de Processos Sigilosos', data=crescimento_geral, palette='Blues')
-plt.title('Crescimento Geral de Processos Sigilosos por Ano')
-plt.xlabel('Ano')
-plt.ylabel('Total de Processos Sigilosos')
-plt.grid(True)
-plt.show()
+fig = px.bar(
+    crescimento_geral, 
+    x='Ano', 
+    y='Total de Processos Sigilosos',
+    title='<b>Crescimento Geral de Processos Sigilosos por Ano</b>',
+    color='Total de Processos Sigilosos', 
+    color_continuous_scale='Blues'
+    )
+
+# Formatando o Gráfico
+fig.update_traces(
+    hovertemplate='<b>Total:</b> %{y: ,d}<extra></extra>'
+    )
+fig.update_layout(separators=',.') # Formatar separador de milhar brasileiro
+
+fig.update_xaxes(
+    tickmode='array',
+    tickvals=crescimento_geral['Ano'].unique(),
+    ticktext=crescimento_geral['Ano'].astype(str)
+    ) # Valor do ano, em inteiro, no eixo x
+
+# Exibir gráfico interativo
+fig.show()
+
 
 
 
