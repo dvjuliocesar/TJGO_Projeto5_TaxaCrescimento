@@ -12,7 +12,7 @@ from plotly.subplots import make_subplots
 plt.style.use('ggplot')
 pd.set_option('display.max_columns', None)
 
-# Carregar e concatenar os dados dos processos judiciais
+# 1) Carregar e concatenar os dados dos processos judiciais
 dfs = []
 for ano in [2022, 2023, 2024]:
     try: 
@@ -22,18 +22,21 @@ for ano in [2022, 2023, 2024]:
     except FileNotFoundError:
         print(f"Arquivo processos_{ano}.csv não encontrado.")
 
-# Verificar dados
-'''print(df.head())
-print(df.info())'''
+df = pd.concat(dfs, ignore_index=True)
 
-# Tratamento das Colunas de Data
+
+# 2) Tratamento dos Dados
+# Converter colunas de data
 df['data_distribuicao'] = pd.to_datetime(df['data_distribuicao'], errors='coerce')
 df['data_baixa'] = pd.to_datetime(df['data_baixa'], errors='coerce')
+
+# Criar coluna de ano de distribuição
+df['ano_distribuicao'] = df['data_distribuicao'].dt.year #
 
 
 # 1) Análise de Crescimento Geral de Processos Sigilosos
 # Criar coluna de ano por análise
-df['ano_distribuicao'] = df['data_distribuicao'].dt.year
+
 
 # Contagem de processos por ano
 crescimento_geral = df.groupby('ano_distribuicao')['processo'].nunique().reset_index()
