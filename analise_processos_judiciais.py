@@ -11,7 +11,7 @@ plt.style.use('ggplot')
 pd.set_option('display.max_columns', None)
 
 # Carregar dados
-df = pd.read_csv('uploads/dados_processos_sigilosos_2022-01-01_a_2025-06-30.csv', 
+df = pd.read_csv('', 
                  parse_dates=['data_distribuicao', 'data_baixa']
                  )
 
