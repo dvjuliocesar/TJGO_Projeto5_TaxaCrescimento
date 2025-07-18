@@ -23,15 +23,26 @@ if not os.path.exists('uploads'):
 # Listar os arquivos CSV na pasta 'uploads'
 arquivos_csv = glob.glob('uploads/processos_*.csv')
 
+# Verificar se foram encontrados arquivos
+if not arquivos_csv:
+    print("Nenhum arquivo processos_*.csv encontrado na pasta 'uploads'.")
+    exit()
+
 # Carregar os arquivos CSV e concatenar em um único DataFrame
 dfs = []
-for ano in [2022, 2023, 2024]:
-    try: 
-        df_ano = pd.read_csv(f'processos_{ano}.csv', sep=',', encoding='utf-8')
+for arquivo in arquivos_csv:
+    try:
+        # Extrair o ano do nome do arquivo
+        ano = int(arquivo.split('_')[-1].split('.')[0])
+        df_ano = pd.read_csv(arquivo, sep=',', encoding='utf-8')
         df_ano['ano_arquivo'] = ano  # Adicionar coluna com o ano do arquivo
         dfs.append(df_ano)
-    except FileNotFoundError:
-        print(f"Arquivo processos_{ano}.csv não encontrado.")
+    except Exception as e:
+        print(f"Erro ao carregar o arquivo {arquivo}: {e}")
+
+if not dfs:
+    print("Nenhum arquivo foi carregado com sucesso.")
+    exit()
 
 df = pd.concat(dfs, ignore_index=True)
 
