@@ -97,6 +97,52 @@ for index, row in analise_sigilo.iterrows():
     print(f"Casos sigilosos: {row['Sigilosos']:,.0f}".replace(",", "."))
     print(f"Proporção sigilosos: {row['Proporcao_Sigilosos']:.2f}".replace(".", ",") + "%")
 
+# Tabela como plotly table
+tabela_resumo = analise_sigilo[['Ano', 'Total_Processos', 'Sigilosos', 'Proporcao_Sigilosos']].copy()
+tabela_resumo.columns = ['Ano', 'Total', 'Sigilosos', '% Sigilosos']
+tabela_resumo['Ano'] = tabela_resumo['Ano'].astype(str)  # Converter ano para string para exibição
+tabela_resumo['Total'] = tabela_resumo['Total'].apply(lambda x: f"{x:,.0f}".replace(",", ".")) # Formatar decimal brasileiro
+tabela_resumo['Sigilosos'] = tabela_resumo['Sigilosos'].apply(lambda x: f"{x:,.0f}".replace(",", "."))
+tabela_resumo['% Sigilosos'] = tabela_resumo['% Sigilosos'].apply(lambda x: f"{x:.2f}".replace(".", ",")) + "%"  # Formatar porcentagem
+
+
+fig_table = go.Figure(data=[go.Table(
+    header=dict(values=tabela_resumo.columns,  
+                fill_color='paleturquoise',
+                align='left'),  
+    cells=dict(values=[tabela_resumo[col] for col in tabela_resumo.columns],
+               fill_color='lavender',  
+                align='left'))])  
+
+fig_table.update_layout(
+    title_text='<b>Tabela de Resumo Anual dos Processos Sigilosos e Não Sigilosos</b>', 
+    title_x=0.5
+    )    
+
+# Cor do cabeçalho hexadecimal
+fig_table.update_traces(
+    header=dict(
+        fill_color='#203864',  # Cor do cabeçalho em hexadecimal
+        font=dict(color='white', size=16)  # Cor e tamanho da fonte do cabeçalho
+    ),
+    cells=dict(
+        fill_color='lavender',  # Cor das células em hexadecimal
+        font=dict(color='black', size=14)  # Cor e tamanho da fonte das células
+    )
+)
+
+# Configurar o layout da tabela 
+fig_table.update_layout(
+    height=400,  # Altura da tabela
+    width=800,   # Largura da tabela
+    margin=dict(l=20, r=20, t=30, b=20),
+    title_font=dict(size=20, color='black'),  # Tamanho e cor do título
+    font=dict(size=14, color='black')  # Tamanho e cor da fonte
+)
+
+# Exibir tabela interativa
+fig_table.show()  
+
 # 5) Gráfico em Barras Distintas da Análise Comparativa
 # Plotar gráfico em barras de comparação entre processos sigilosos e não sigilosos
 fig = px.bar(
@@ -146,7 +192,7 @@ fig2 = px.bar(
 
 # Definir cores personalizadas para cada barra
 cores_personalizadas = {
-    2022: "#709EE3",
+    2022: "#4375D3",
     2023: "#494D94", 
     2024: "#203864"
 }
