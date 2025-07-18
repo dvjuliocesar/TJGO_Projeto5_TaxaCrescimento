@@ -48,12 +48,17 @@ df = pd.concat(dfs, ignore_index=True)
 
 
 # 2) Tratamento dos Dados
+# Verificar se as colunas necessárias existem
+colunas_necessarias = ['processo', 'data_distribuicao', 'data_baixa', 'is_segredo_justica']
+for coluna in colunas_necessarias:
+    if coluna not in df.columns:
+        print(f"Coluna '{coluna}' não encontrada nos dados. Verifique os arquivos CSV.")
+        exit()
+
 # Converter colunas de data
 df['data_distribuicao'] = pd.to_datetime(df['data_distribuicao'], errors='coerce')
 df['data_baixa'] = pd.to_datetime(df['data_baixa'], errors='coerce')
-
-# Criar coluna de ano de distribuição
-df['ano_distribuicao'] = df['data_distribuicao'].dt.year #
+df['ano_distribuicao'] = df['data_distribuicao'].dt.year # Criar coluna de ano de distribuição
 
 
 # 3) Análise Comparativa entre de Processos Sigilosos e Não Sigilosos
@@ -64,7 +69,7 @@ analise_sigilo.columns = ['Ano', 'Nao_Sigilosos', 'Sigilosos']
 
 # Calcular totais e proporção de processos sigilosos
 analise_sigilo['Total_Processos'] = analise_sigilo['Nao_Sigilosos'] + analise_sigilo['Sigilosos']
-analise_sigilo['Proporcao_Sigilosos'] = analise_sigilo['Sigilosos'] / analise_sigilo['Total_Processos']*100
+analise_sigilo['Proporcao_Sigilosos'] = analise_sigilo['Sigilosos'] / analise_sigilo['Total_Processos'] * 100
 
 # converter ano para inteiro
 analise_sigilo['Ano'] = analise_sigilo['Ano'].astype(int)
