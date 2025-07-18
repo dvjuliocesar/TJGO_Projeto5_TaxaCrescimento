@@ -93,8 +93,8 @@ analise_sigilo['Ano'] = analise_sigilo['Ano'].astype(int)
 print("\nTabela Resumo Anual:")
 for index, row in analise_sigilo.iterrows():
     print(f"\n{row['Ano']}:")
-    print(f"Casos novos: {row['Total_Processos']: ,d}")
-    print(f"Casos novos sigilosos: {row['Sigilosos']: ,d}")
+    print(f"Casos novos: {int(row['Total_Processos']): ,d}")  # Convertendo para inteiro antes de formatar
+    print(f"Casos novos sigilosos: {int(row['Sigilosos']): ,d}")
     print(f"Proporção sigilosos: {row['Proporcao_Sigilosos']:.2f}%")
 
 # Formatar separador de milhar brasileiro
