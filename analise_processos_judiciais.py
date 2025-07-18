@@ -47,7 +47,15 @@ analise_sigilo['Proporcao_Sigilosos'] = analise_sigilo['Sigilosos'] / analise_si
 # converter ano para inteiro
 analise_sigilo['Ano'] = analise_sigilo['Ano'].astype(int)
 
+# 4) Tabela Resumo
+print("\nTabela Resumo Anual:")
+for index, row in analise_sigilo.iterrows():
+    print(f"\n{row['Ano']}:")
+    print(f"Casos novos: {row['Total_Processos']: ,d}")
+    print(f"Casos novos sigilosos: {row['Sigilosos']: ,d}")
+    print(f"Proporção sigilosos: {row['Proporcao_Sigilosos']:.2f}%")
 
+'''
 # Contagem de processos por ano
 crescimento_geral = df.groupby('ano_distribuicao')['processo'].nunique().reset_index()
 crescimento_geral.columns = ['Ano', 'Total de Processos Sigilosos']
@@ -79,7 +87,7 @@ fig.update_xaxes(
 
 # Exibir gráfico interativo
 fig.show()
-
+'''
 
 
 
