@@ -82,6 +82,13 @@ for index, row in analise_sigilo.iterrows():
     print(f"Casos novos sigilosos: {row['Sigilosos']: ,d}")
     print(f"Proporção sigilosos: {row['Proporcao_Sigilosos']:.2f}%")
 
+# Formatar separador de milhar brasileiro
+analise_sigilo['Total_Processos'] = analise_sigilo['Total_Processos'].apply(lambda x: f"{x: ,d}")
+analise_sigilo['Sigilosos'] = analise_sigilo['Sigilosos'].apply(lambda x: f"{x: ,d}")
+analise_sigilo['Nao_Sigilosos'] = analise_sigilo['Nao_Sigilosos'].apply(lambda x: f"{x: ,d}")
+analise_sigilo['Proporcao_Sigilosos'] = analise_sigilo['Proporcao_Sigilosos'].apply(lambda x: f"{x:.2f}%")
+
+
 '''
 # Contagem de processos por ano
 crescimento_geral = df.groupby('ano_distribuicao')['processo'].nunique().reset_index()
