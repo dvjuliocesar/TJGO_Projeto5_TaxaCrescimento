@@ -34,8 +34,18 @@ df['data_baixa'] = pd.to_datetime(df['data_baixa'], errors='coerce')
 df['ano_distribuicao'] = df['data_distribuicao'].dt.year #
 
 
-# 1) Análise de Crescimento Geral de Processos Sigilosos
-# Criar coluna de ano por análise
+# 3) Análise Comparativa entre de Processos Sigilosos e Não Sigilosos
+# Agrupar por ano e status de sigilo
+analise_sigilo = df.groupby(
+    ['ano_distribuicao', 'is_segredo_justica']).nunique().unstack().reset_index()
+analise_sigilo.columns = ['Ano', 'Nao_Sigilosos', 'Sigilosos']
+
+# Calcular totais e proporção de processos sigilosos
+analise_sigilo['Total_Processos'] = analise_sigilo['Nao_Sigilosos'] + analise_sigilo['Sigilosos']
+analise_sigilo['Proporcao_Sigilosos'] = analise_sigilo['Sigilosos'] / analise_sigilo['Total_Processos']*100
+
+# converter ano para inteiro
+analise_sigilo['Ano'] = analise_sigilo['Ano'].astype(int)
 
 
 # Contagem de processos por ano
