@@ -140,11 +140,11 @@ fig_table.update_layout(
     font=dict(size=14, color='black')  # Tamanho e cor da fonte
 )
 
-# Exibir tabela interativa
+# Exibir tabela
 fig_table.show()  
 
-# 5) Gráfico em Barras Distintas da Análise Comparativa
-# Plotar gráfico em barras de comparação entre processos sigilosos e não sigilosos
+# 5) Gráficos
+# 5.1) Plotar gráfico em barras de comparação entre processos sigilosos e não sigilosos
 fig = px.bar(
     analise_sigilo,
     x='Ano',
@@ -156,7 +156,6 @@ fig = px.bar(
     )
 
 # Formatando o Gráfico
-#
 fig.for_each_trace(
     lambda trace: trace.update(hovertemplate='<b>Total de Casos Novos:</b> %{y:,.0f}<extra></extra>') 
     if trace.name == 'Nao_Sigilosos' 
@@ -177,9 +176,7 @@ fig.update_xaxes(
     ticktext=analise_sigilo['Ano'].astype(str)
     ) # Valor do ano, em inteiro, no eixo x
 
-# Gráfico de proporção de processos sigilosos
-
-
+# 5.2) Gráfico de proporção de processos sigilosos
 # Configurações adicionais
 fig2 = px.bar(
     analise_sigilo,
@@ -218,7 +215,7 @@ fig2.update_xaxes(
     ticktext=analise_sigilo['Ano'].astype(str)
     ) # Valor do ano, em inteiro, no eixo x
 
-# Exibir gráfico interativo
+# Exibir gráficos
 fig.show()
 fig2.show()
 
