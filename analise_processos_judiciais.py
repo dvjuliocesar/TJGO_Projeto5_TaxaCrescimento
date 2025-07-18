@@ -62,10 +62,25 @@ df['ano_distribuicao'] = df['data_distribuicao'].dt.year # Criar coluna de ano d
 
 
 # 3) Análise Comparativa entre de Processos Sigilosos e Não Sigilosos
-# Agrupar por ano e status de sigilo
-analise_sigilo = df.groupby(
-    ['ano_distribuicao', 'is_segredo_justica']).nunique().unstack().reset_index()
+# Garantir que temos apenas True/False
+df['is_segredo_justica'] = df['is_segredo_justica'].astype(str)
+df = df[df['is_segredo_justica'].isin(['True', 'False'])]
+
+# Agrupar contando os processos únicos
+contagem_sigilo = df.groupby(['ano_distribuicao', 'is_segredo_justica'])['processo'].nunique().reset_index()
+
+# Pivotar a tabela
+analise_sigilo = contagem_sigilo.pivot(
+    index='ano_distribuicao', 
+    columns='is_segredo_justica', 
+    values='processo'
+).reset_index()
+
+# Renomear colunas
 analise_sigilo.columns = ['Ano', 'Nao_Sigilosos', 'Sigilosos']
+
+# Preencher com possívels valores nulos
+analise_sigilo = analise_sigilo.fillna(0)
 
 # Calcular totais e proporção de processos sigilosos
 analise_sigilo['Total_Processos'] = analise_sigilo['Nao_Sigilosos'] + analise_sigilo['Sigilosos']
@@ -87,6 +102,13 @@ analise_sigilo['Total_Processos'] = analise_sigilo['Total_Processos'].apply(lamb
 analise_sigilo['Sigilosos'] = analise_sigilo['Sigilosos'].apply(lambda x: f"{x: ,d}")
 analise_sigilo['Nao_Sigilosos'] = analise_sigilo['Nao_Sigilosos'].apply(lambda x: f"{x: ,d}")
 analise_sigilo['Proporcao_Sigilosos'] = analise_sigilo['Proporcao_Sigilosos'].apply(lambda x: f"{x:.2f}%")
+
+# Primeiro verificar os valores únicos na coluna is_segredo_justica
+
+
+
+
+
 
 
 '''
