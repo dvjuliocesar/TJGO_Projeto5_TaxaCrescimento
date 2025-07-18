@@ -110,6 +110,7 @@ fig = px.bar(
     )
 
 # Formatando o Gráfico
+#
 fig.for_each_trace(
     lambda trace: trace.update(hovertemplate='<b>Total de Casos Novos:</b> %{y:,.0f}<extra></extra>') 
     if trace.name == 'Nao_Sigilosos' 
@@ -130,9 +131,50 @@ fig.update_xaxes(
     ticktext=analise_sigilo['Ano'].astype(str)
     ) # Valor do ano, em inteiro, no eixo x
 
+# Gráfico de proporção de processos sigilosos
+
+
+# Configurações adicionais
+fig2 = px.bar(
+    analise_sigilo,
+    x='Ano',
+    y='Proporcao_Sigilosos',
+    title='<b>Proporção de Processos Sigilosos</b>',
+    text='Proporcao_Sigilosos',
+    labels={'Proporcao_Sigilosos': 'Proporção de Sigilosos (%)', 'Ano': 'Ano'},
+)
+
+# Definir cores personalizadas para cada barra
+cores_personalizadas = {
+    2022: "#709EE3",
+    2023: "#494D94", 
+    2024: "#203864"
+}
+
+# Aplicar as cores manualmente
+fig2.update_traces(
+    marker_color=[cores_personalizadas[ano] for ano in analise_sigilo['Ano']],
+    texttemplate='%{text:.2f}%',
+    textposition='outside',
+    hovertemplate='<b>Proporção de Processos Sigilosos:</b> %{y:.2f}%<extra></extra>'
+)
+
+fig2.update_layout(
+    legend_title_text='Ano',
+    xaxis_title='Ano',
+    yaxis_title='Proporção de Processos Sigilosos (%)',
+    title_x=0.5
+    )
+
+fig2.update_xaxes(
+    tickmode='array',
+    tickvals=analise_sigilo['Ano'].unique(),
+    ticktext=analise_sigilo['Ano'].astype(str)
+    ) # Valor do ano, em inteiro, no eixo x
+
 # Exibir gráfico interativo
 fig.show()
-
+fig2.show()
 
 
 
