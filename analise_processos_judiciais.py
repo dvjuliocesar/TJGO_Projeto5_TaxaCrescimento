@@ -7,12 +7,23 @@ from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import glob
+import os
 
 # Configurações Iniciais
 plt.style.use('ggplot')
 pd.set_option('display.max_columns', None)
 
-# 1) Carregar e concatenar os dados dos processos judiciais
+# 1) Carregar e concatenar os dados dos processos judiciais da pasta uploads
+# Verificar se a pasta 'uploads' existe
+if not os.path.exists('uploads'):
+    print("A pasta 'uploads' não existe. Certifique-se de que os arquivos estão na pasta correta.")
+    exit()  
+
+# Listar os arquivos CSV na pasta 'uploads'
+arquivos_csv = glob.glob('uploads/processos_*.csv')
+
+# Carregar os arquivos CSV e concatenar em um único DataFrame
 dfs = []
 for ano in [2022, 2023, 2024]:
     try: 
