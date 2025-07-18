@@ -79,7 +79,7 @@ analise_sigilo = contagem_sigilo.pivot(
 # Renomear colunas
 analise_sigilo.columns = ['Ano', 'Nao_Sigilosos', 'Sigilosos']
 
-# Preencher com possívels valores nulos
+# Preencher com possíveis valores nulos
 analise_sigilo = analise_sigilo.fillna(0)
 
 # Calcular totais e proporção de processos sigilosos
@@ -93,9 +93,46 @@ analise_sigilo['Ano'] = analise_sigilo['Ano'].astype(int)
 print("\nTabela Resumo Anual:")
 for index, row in analise_sigilo.iterrows():
     print(f"\n{int(row['Ano'])}:") # Convertendo para inteiro antes de formatar
-    print(f"Casos novos: {row['Total_Processos']:,.0f}".replace(",", "."))  # Separador de milhar como ponto
-    print(f"Casos novos sigilosos: {row['Sigilosos']:,.0f}".replace(",", "."))
+    print(f"Casos novos: {row['Nao_Sigilosos']:,.0f}".replace(",", "."))  # Separador de milhar como ponto
+    print(f"Casos sigilosos: {row['Sigilosos']:,.0f}".replace(",", "."))
     print(f"Proporção sigilosos: {row['Proporcao_Sigilosos']:.2f}".replace(".", ",") + "%")
+
+# 5) Gráfico em Barras Distintas da Análise Comparativa
+# Plotar gráfico em barras de comparação entre processos sigilosos e não sigilosos
+fig = px.bar(
+    analise_sigilo,
+    x='Ano',
+    y=['Nao_Sigilosos', 'Sigilosos'],  
+    title='<b>Comparativo Anual do Número de Processos Sigilosos e Não Sigilosos</b>',
+    labels={'value': 'Total de Processos', 'variable': 'Tipo de Processo'},
+    color_discrete_sequence=["#4375D3", '#203864'],  # Cores para os tipos de processo
+    barmode='group'
+    )
+
+# Formatando o Gráfico
+fig.for_each_trace(
+    lambda trace: trace.update(hovertemplate='<b>Total de Casos Novos:</b> %{y:,.0f}<extra></extra>') 
+    if trace.name == 'Nao_Sigilosos' 
+    else trace.update(hovertemplate='<b>Total de Casos Sigilosos:</b> %{y:,.0f}<extra></extra>')
+)
+
+fig.update_layout(
+    separators=',.', # Formatar separador de milhar brasileiro
+    title_x=0.5, 
+    legend_title_text='Tipo de Processo',
+    xaxis_title='Ano',
+    yaxis_title='Total de Processos'
+    ) 
+
+fig.update_xaxes(
+    tickmode='array',
+    tickvals=analise_sigilo['Ano'].unique(),
+    ticktext=analise_sigilo['Ano'].astype(str)
+    ) # Valor do ano, em inteiro, no eixo x
+
+# Exibir gráfico interativo
+fig.show()
+
 
 
 
