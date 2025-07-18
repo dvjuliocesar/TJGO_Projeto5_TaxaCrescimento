@@ -92,18 +92,13 @@ analise_sigilo['Ano'] = analise_sigilo['Ano'].astype(int)
 # 4) Tabela Resumo
 print("\nTabela Resumo Anual:")
 for index, row in analise_sigilo.iterrows():
-    print(f"\n{row['Ano']}:")
-    print(f"Casos novos: {int(row['Total_Processos']): ,d}")  # Convertendo para inteiro antes de formatar
-    print(f"Casos novos sigilosos: {int(row['Sigilosos']): ,d}")
-    print(f"Proporção sigilosos: {row['Proporcao_Sigilosos']:.2f}%")
+    print(f"\n{int(row['Ano'])}:") # Convertendo para inteiro antes de formatar
+    print(f"Casos novos: {row['Total_Processos']:,.0f}".replace(",", "."))  # Separador de milhar como ponto
+    print(f"Casos novos sigilosos: {row['Sigilosos']:,.0f}".replace(",", "."))
+    print(f"Proporção sigilosos: {row['Proporcao_Sigilosos']:.2f}".replace(".", ",") + "%")
 
-# Formatar separador de milhar brasileiro
-analise_sigilo['Total_Processos'] = analise_sigilo['Total_Processos'].apply(lambda x: f"{x: ,d}")
-analise_sigilo['Sigilosos'] = analise_sigilo['Sigilosos'].apply(lambda x: f"{x: ,d}")
-analise_sigilo['Nao_Sigilosos'] = analise_sigilo['Nao_Sigilosos'].apply(lambda x: f"{x: ,d}")
-analise_sigilo['Proporcao_Sigilosos'] = analise_sigilo['Proporcao_Sigilosos'].apply(lambda x: f"{x:.2f}%")
 
-# Primeiro verificar os valores únicos na coluna is_segredo_justica
+
 
 
 
