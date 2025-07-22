@@ -1,3 +1,9 @@
+'''
+Análise de Processos Judiciais Sigilosos e Não Sigilosos:
+- Este script analisa dados de processos judiciais, comparando a quantidade de processos sigilosos
+e não sigilosos ao longo dos anos. Ele gera tabelas e gráficos para visualização dos dados.
+'''
+
 # Bibliotecas
 import pandas as pd
 import numpy as np
@@ -31,21 +37,13 @@ if not arquivos_csv:
 # Carregar os arquivos CSV e concatenar em um único DataFrame
 dfs = []
 for arquivo in arquivos_csv:
-    try:
-        # Extrair o ano do nome do arquivo
-        ano = int(arquivo.split('_')[-1].split('.')[0])
-        df_ano = pd.read_csv(arquivo, sep=',', encoding='utf-8')
-        df_ano['ano_arquivo'] = ano  # Adicionar coluna com o ano do arquivo
-        dfs.append(df_ano)
-    except Exception as e:
-        print(f"Erro ao carregar o arquivo {arquivo}: {e}")
-
-if not dfs:
-    print("Nenhum arquivo foi carregado com sucesso.")
-    exit()
+    # Extrair o ano do nome do arquivo
+    ano = int(arquivo.split('_')[-1].split('.')[0])
+    df_ano = pd.read_csv(arquivo, sep=',', encoding='utf-8')
+    df_ano['ano_arquivo'] = ano  # Adicionar coluna com o ano do arquivo
+    dfs.append(df_ano)
 
 df = pd.concat(dfs, ignore_index=True)
-
 
 # 2) Tratamento dos Dados
 # Verificar se as colunas necessárias existem
@@ -90,12 +88,14 @@ analise_sigilo['Proporcao_Sigilosos'] = analise_sigilo['Sigilosos'] / analise_si
 analise_sigilo['Ano'] = analise_sigilo['Ano'].astype(int)
 
 # 4) Tabela Resumo
+'''
 print("\nTabela Resumo Anual:")
 for index, row in analise_sigilo.iterrows():
     print(f"\n{int(row['Ano'])}:") # Convertendo para inteiro antes de formatar
     print(f"Casos novos: {row['Nao_Sigilosos']:,.0f}".replace(",", "."))  # Separador de milhar como ponto
     print(f"Casos sigilosos: {row['Sigilosos']:,.0f}".replace(",", "."))
     print(f"Proporção sigilosos: {row['Proporcao_Sigilosos']:.2f}".replace(".", ",") + "%")
+'''
 
 # Tabela como plotly table
 tabela_resumo = analise_sigilo[['Ano', 'Total_Processos', 'Sigilosos', 'Proporcao_Sigilosos']].copy()
