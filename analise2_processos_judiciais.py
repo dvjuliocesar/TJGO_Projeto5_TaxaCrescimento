@@ -40,14 +40,9 @@ for arquivo in arquivos_csv:
 df = pd.concat(dfs, ignore_index=True)
 
 # 2) Tratamento dos Dados
-# Verificar se as colunas necessárias existem
-colunas_necessarias = ['processo', 'data_distribuicao', 'data_baixa', 'is_segredo_justica']
-for coluna in colunas_necessarias:
-    if coluna not in df.columns:
-        print(f"Coluna '{coluna}' não encontrada nos dados. Verifique os arquivos CSV.")
-        exit()
-
 # Converter colunas de data
 df['data_distribuicao'] = pd.to_datetime(df['data_distribuicao'], errors='coerce')
 df['data_baixa'] = pd.to_datetime(df['data_baixa'], errors='coerce')
 df['ano_distribuicao'] = df['data_distribuicao'].dt.year # Criar coluna de ano de distribuição
+
+# 
