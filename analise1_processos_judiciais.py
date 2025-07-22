@@ -21,11 +21,6 @@ plt.style.use('ggplot')
 pd.set_option('display.max_columns', None)
 
 # 1) Carregar e concatenar os dados dos processos judiciais da pasta uploads
-# Verificar se a pasta 'uploads' existe
-if not os.path.exists('uploads'):
-    print("A pasta 'uploads' não existe. Certifique-se de que os arquivos estão na pasta correta.")
-    exit()  
-
 # Listar os arquivos CSV na pasta 'uploads'
 arquivos_csv = glob.glob('uploads/processos_*.csv')
 
