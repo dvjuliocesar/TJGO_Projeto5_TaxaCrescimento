@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import glob
 import os
+import re
 
 # Configurações Iniciais
 plt.style.use('ggplot')
@@ -30,26 +31,87 @@ for arquivo in arquivos_csv:
 df = pd.concat(dfs, ignore_index=True)
 
 # 2) Tratamento dos Dados para Advogados (Processos Sigilosos)
-# Converter colunas de data
+# Tratamento das colunas
 df['data_distribuicao'] = pd.to_datetime(df['data_distribuicao'], errors='coerce')
-df['data_baixa'] = pd.to_datetime(df['data_baixa'], errors='coerce')
 df['ano_distribuicao'] = df['data_distribuicao'].dt.year # Criar coluna de ano de distribuição
+df['is_segredo_justica'] = df['is_segredo_justica'].astype(bool)
 
-# Expandir a coluna 'oab' que pode conter múltiplos advogados por processo
-df_advogados = df.assign(oab=df['oab'].str.split(';').explode('oab'))
-df_advogados['oab'] = df_advogados['oab'].str.strip()  # Remover espaços em branco
+# Tratamento dos números de OAB
+def is_oab_valida(oab):
+    """
+    Verifica se um número de OAB é válido seguindo o formato:
+    NÚMEROS + LETRA + ESPAÇO + UF. Ex: '2153421N GO'
+    """
+    if not isinstance(oab, str) or not oab.strip():
+        return False
+    
+    oab_limpa = oab.upper().strip()
 
-# Filtrar apenas processos sigilosos
-df_sigiliosos = df_advogados[df_advogados['is_segredo_justica'] == 'True']
+    ufs_validas = ['GO', 'DF', 'SP', 'RJ', 'MG', 'RS', 'SC', 'PR', 'BA', 'PE',
+                  'CE', 'MA', 'ES', 'AL', 'SE', 'PB', 'RN', 'PI', 'MT', 'MS', 
+                  'TO', 'PA', 'AP', 'AM', 'RR', 'AC', 'RO'
+                  ]
+    
+    padrao_regex = re.compile(f"^\\d+[A-Z]\\s({'|'.join(ufs_validas)})$")
+    
+    return bool(padrao_regex.match(oab_limpa))
+
+# Aplicar a validação de OAB
+df['oab_valida'] = df['oab'].apply(is_oab_valida)
+
+# Contar e exibir a quantidade de OABs inválidas
+registros_invalidos = df[df['oab_valida'] == False]
+qtd_invalidos = len(registros_invalidos)
+
+print("--- Validação de Registros de OAB (Novo Formato) ---")
+print(f"Total de registros com OAB em formato inválido ou nulo: {qtd_invalidos}")
+
+if qtd_invalidos > 0:
+    exemplos_invalidos = registros_invalidos['oab'].unique()
+    print(f"Exemplos de OABs inválidas: {exemplos_invalidos}")
+print("\n" + "="*80 + "\n")
+
+# Dataframe com apenas OABs válidas
+df_validos = df[df['oab_valida'] == True].copy()
 
 # 3) Análise por advogado
-# Contar processos sigilosos por advogado por ano
-crescimento_advogados = df_sigiliosos.groupby(['ano_distribuicao', 'oab'])['processo'].nunique().unstack().fillna(0)
+if not df_validos.empty:
+    analise_advogados = df_validos.groupby(['ano_distribuicao', 'oab', 'is_segredo_justica'])['processo'].nunique().unstack(fill_value=0)
+    analise_advogados.columns = ['Nao_Sigilosos', 'Sigilosos']
+    analise_advogados['Total_Processos'] = analise_advogados['Nao_Sigilosos'] + analise_advogados['Sigilosos']
+    analise_advogados['Proporcao_Sigilosos'] = (analise_advogados['Sigilosos'] / analise_advogados['Total_Processos'] * 100)
+    total_sigilosos_adv = analise_advogados.groupby('oab')['Sigilosos'].sum()
+    top_advogados = total_sigilosos_adv.nlargest(10).index
+    analise_top_advogados = analise_advogados[analise_advogados.index.get_level_values('oab').isin(top_advogados)]
 
-# Calcular crescimento percentual para os top 10 advogados
-top_advogados = df_sigiliosos['oab'].value_counts().nlargest(10).index
-crescimento_top = crescimento_advogados[top_advogados].T
+    # 4) Visualização dos dados
+    # Tabela resumo
+    tabela_resumo = analise_top_advogados.reset_index()
+    tabela_resumo.rename(columns={'ano_distribuicao': 'Ano', 
+                                'oab': 'OAB', 
+                                'Nao_Sigilosos': 'Não Sigilosos',
+                                'Total_Processos': 'Total de Processos',
+                                'Proporcao_Sigilosos': 'Proporção de Sigilosos'}, 
+                                inplace=True)
+    # Ordenar primeiro por Ano (crescente) e depois pela Proporção (decrescente)
+    tabela_resumo = tabela_resumo.sort_values(
+        by=['Ano', 'Proporção de Sigilosos'], 
+        ascending=[True, False]
+    )
+    # Formatar a coluna de proporção
+    tabela_resumo['Proporção de Sigilosos'] = tabela_resumo['Proporção de Sigilosos'].map('{:,.2f}%'.format)  
 
-# Calcular a taxa de crescimento anual
-crescimento_top_pct = crescimento_top.pct_change(axis=1) * 100
+    # Exibir a tabela
+    print("--- Tabela de Análise: Top 10 Advogados com Mais Casos Sigilosos ---")
+    # Ajustar a OAB para ser exibida como inteiro, sem casas decimais
+    print(tabela_resumo.to_string(index=False))
+else:
+    print("--- Não há registros válidos de OAB para análise. ---")
+
+print("\n" + "="*80 + "\n")
+
+
+
+
+
 
