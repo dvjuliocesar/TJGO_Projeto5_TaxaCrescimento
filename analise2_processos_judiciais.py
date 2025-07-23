@@ -95,13 +95,44 @@ if not df_validos.empty:
     total_sigilosos_adv = analise_advogados.groupby('oab')['Sigilosos'].sum()
     media_geral_sigilosos = total_sigilosos_adv.mean()
     adv_acima_media_geral = total_sigilosos_adv[total_sigilosos_adv > media_geral_sigilosos].reset_index()
-    adv_acima_media_geral.columns = ['OAB', 'Total de Processos Sigilosos']
+    adv_acima_media_geral.columns = ['oab', 'Sigilosos']
+    # top 10 advogados acima da média
+    adv_acima_media_geral = adv_acima_media_geral.nlargest(10, 'Sigilosos')
+    adv_acima_media_geral['Sigilosos'] = adv_acima_media_geral['Sigilosos']
+    adv_acima_media_geral['oab'] = adv_acima_media_geral['oab']
+    adv_acima_media_geral = adv_acima_media_geral.reset_index(drop=True)
+    adv_acima_media_geral = adv_acima_media_geral.rename(columns={'oab': 'OAB', 'Sigilosos': 'Total de Casos Sigilosos'})
 
     print(f"Média geral de casos sigilosos por advogado no período: {media_geral_sigilosos:.2f}")
     print("Advogados com atuação acima da média geral:")
     print(adv_acima_media_geral.sort_values(by='Total de Casos Sigilosos', ascending=False).to_string(index=False))
     print("\n" + "="*80 + "\n")
 
+    # Análise 3: Advogados acima da média ANUAL de processos sigilosos
+    print('--- Análise: Advogados Acima da Média Anual de Processos Sigilosos ---')
+    media_anual_sigilosos = analise_advogados.groupby('ano_distribuicao')['Sigilosos'].mean()
+
+    # Tratar dados para o filtro
+    df_analise = analise_advogados.reset_index()
+    df_analise['Media_Anual_Sigilosos'] = df_analise['ano_distribuicao'].map(media_anual_sigilosos)
+
+    # Filtrar advogados acima da média do seu respectivo ano
+    adv_acima_media_anual = df_analise[df_analise['Sigilosos'] > df_analise['Media_Anual_Sigilosos']]
+
+    # Exibir os resultados
+    for ano, media in media_anual_sigilosos.items():
+        print(f"Ano {ano}: Média Anual de Processos Sigilosos: {media:.2f}")
+        tabela_ano = adv_acima_media_anual[adv_acima_media_anual['ano_distribuicao'] == ano][['oab', 'Sigilosos']]
+        if not tabela_ano.empty:
+            tabela_ano.columns = ['OAB', 'Total de Casos Sigilosos']
+            print(tabela_ano.sort_values(by='Total de Casos Sigilosos', ascending=False).to_string(index=False))
+        else:
+            print("Nenhum advogado acima da média anual.")
+        print("-" * 40)
+    print("\n" + "="*80 + "\n")
+
+
+    
     # 4) Visualização dos dados
     # Tabela resumo
     tabela_resumo = analise_top_advogados.reset_index()
