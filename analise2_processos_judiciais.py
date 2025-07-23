@@ -1,6 +1,7 @@
 '''Análise de Processos Judiciais - Advogados e Sigilos:
 - Este script analisa dados de processos judiciais, focando na validação de números de OAB
 e na proporção de processos sigilosos por advogado. Ele gera tabelas e gráficos para visualização dos dados.'''
+
 # Bibliotecas
 import pandas as pd
 import numpy as np
@@ -77,8 +78,10 @@ print("\n" + "="*80 + "\n")
 # Dataframe com apenas OABs válidas
 df_validos = df[df['oab_valida'] == True].copy()
 
-# 3) Análise por advogado
+# 3) Análises
+
 if not df_validos.empty:
+    # Análise 1: Proporção de processos sigilosos por advogado ao ano
     analise_advogados = df_validos.groupby(['ano_distribuicao', 'oab', 'is_segredo_justica'])['processo'].nunique().unstack(fill_value=0)
     analise_advogados.columns = ['Nao_Sigilosos', 'Sigilosos']
     analise_advogados['Total_Processos'] = analise_advogados['Nao_Sigilosos'] + analise_advogados['Sigilosos']
@@ -86,6 +89,18 @@ if not df_validos.empty:
     total_sigilosos_adv = analise_advogados.groupby('oab')['Sigilosos'].sum()
     top_advogados = total_sigilosos_adv.nlargest(10).index
     analise_top_advogados = analise_advogados[analise_advogados.index.get_level_values('oab').isin(top_advogados)]
+
+    # Análise 2: Advogados acima da média GERAL de processos sigilosos
+    print('--- Análise: Advogados Acima da Média Geral de Processos Sigilosos ---')
+    total_sigilosos_adv = analise_advogados.groupby('oab')['Sigilosos'].sum()
+    media_geral_sigilosos = total_sigilosos_adv.mean()
+    adv_acima_media_geral = total_sigilosos_adv[total_sigilosos_adv > media_geral_sigilosos].reset_index()
+    adv_acima_media_geral.columns = ['OAB', 'Total de Processos Sigilosos']
+
+    print(f"Média geral de casos sigilosos por advogado no período: {media_geral_sigilosos:.2f}")
+    print("Advogados com atuação acima da média geral:")
+    print(adv_acima_media_geral.sort_values(by='Total de Casos Sigilosos', ascending=False).to_string(index=False))
+    print("\n" + "="*80 + "\n")
 
     # 4) Visualização dos dados
     # Tabela resumo
