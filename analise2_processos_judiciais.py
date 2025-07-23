@@ -1,3 +1,6 @@
+'''Análise de Processos Judiciais - Advogados e Sigilos:
+- Este script analisa dados de processos judiciais, focando na validação de números de OAB
+e na proporção de processos sigilosos por advogado. Ele gera tabelas e gráficos para visualização dos dados.'''
 # Bibliotecas
 import pandas as pd
 import numpy as np
