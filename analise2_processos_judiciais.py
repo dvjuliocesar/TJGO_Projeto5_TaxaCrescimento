@@ -48,16 +48,12 @@ def is_oab_valida(oab):
     """
     if not isinstance(oab, str) or not oab.strip():
         return False
-    
     oab_limpa = oab.upper().strip()
-
     ufs_validas = ['GO', 'DF', 'SP', 'RJ', 'MG', 'RS', 'SC', 'PR', 'BA', 'PE',
                   'CE', 'MA', 'ES', 'AL', 'SE', 'PB', 'RN', 'PI', 'MT', 'MS', 
                   'TO', 'PA', 'AP', 'AM', 'RR', 'AC', 'RO'
                   ]
-    
-    padrao_regex = re.compile(f"^\\d+[A-Z]\\s({'|'.join(ufs_validas)})$")
-    
+    padrao_regex = re.compile(f"^[1-9]\\d*[A-Z]\\s({'|'.join(ufs_validas)})$")
     return bool(padrao_regex.match(oab_limpa))
 
 # Aplicar a validação de OAB
@@ -108,31 +104,59 @@ if not df_validos.empty:
     print(adv_acima_media_geral.sort_values(by='Total de Casos Sigilosos', ascending=False).to_string(index=False))
     print("\n" + "="*80 + "\n")
 
-    # Análise 3: Advogados acima da média ANUAL de processos sigilosos
-    print('--- Análise: Advogados Acima da Média Anual de Processos Sigilosos ---')
+    # Análise 3: Top 10 Advogados acima da média ANUAL de processos sigilosos
+    print("--- Análise: Advogados Acima da Média Anual de Casos Sigilosos ---")
     media_anual_sigilosos = analise_advogados.groupby('ano_distribuicao')['Sigilosos'].mean()
 
-    # Tratar dados para o filtro
+    # Mantém a lógica de encontrar TODOS os advogados acima da média
     df_analise = analise_advogados.reset_index()
-    df_analise['Media_Anual_Sigilosos'] = df_analise['ano_distribuicao'].map(media_anual_sigilosos)
+    df_analise['Media_Anual'] = df_analise['ano_distribuicao'].map(media_anual_sigilosos)
+    adv_acima_media_anual = df_analise[df_analise['Sigilosos'] > df_analise['Media_Anual']]
 
-    # Filtrar advogados acima da média do seu respectivo ano
-    adv_acima_media_anual = df_analise[df_analise['Sigilosos'] > df_analise['Media_Anual_Sigilosos']]
-
-    # Exibir os resultados
+    # O loop agora irá filtrar e pegar apenas o Top 10 de cada ano
     for ano, media in media_anual_sigilosos.items():
-        print(f"Ano {ano}: Média Anual de Processos Sigilosos: {media:.2f}")
+        print(f"Ano: {int(ano)} (Média Anual de Casos Sigilosos: {media:.2f})")
+        
+        # Filtra a tabela para o ano corrente
         tabela_ano = adv_acima_media_anual[adv_acima_media_anual['ano_distribuicao'] == ano][['oab', 'Sigilosos']]
+        
         if not tabela_ano.empty:
-            tabela_ano.columns = ['OAB', 'Total de Casos Sigilosos']
-            print(tabela_ano.sort_values(by='Total de Casos Sigilosos', ascending=False).to_string(index=False))
+            # Ordena por quantidade de casos e seleciona os 10 primeiros
+            top_10_ano = tabela_ano.sort_values(by='Sigilosos', ascending=False).head(10)
+            print(top_10_ano.to_string(index=False))
         else:
-            print("Nenhum advogado acima da média anual.")
-        print("-" * 40)
+            print("  Nenhum advogado acima da média neste ano.")
+        print("-" * 50)
     print("\n" + "="*80 + "\n")
 
+    # Análise 4: Top 10 Advogados acima da média ANUAL de PROPORÇÃO de processos sigilosos
+    print("--- Análise: Top 10 Advogados Acima da Média Anual de PROPORÇÃO de Casos Sigilosos ---")
+    media_anual_proporcao = analise_advogados.groupby('ano_distribuicao')['Proporcao_Sigilosos'].mean()
 
-    
+    # Mantém a lógica de encontrar TODOS os advogados acima da média de proporção
+    df_analise['Media_Anual_Proporcao'] = df_analise['ano_distribuicao'].map(media_anual_proporcao)
+    adv_acima_media_proporcao = df_analise[df_analise['Proporcao_Sigilosos'] > df_analise['Media_Anual_Proporcao']]
+
+    # O loop agora irá filtrar e pegar apenas o Top 10 de cada ano
+    for ano, media in media_anual_proporcao.items():
+        print(f"Ano: {int(ano)} (Média Anual de Proporção Sigilosa: {media:.2f}%)")
+        
+        # Filtra a tabela para o ano corrente (ainda com a proporção numérica)
+        tabela_ano_prop = adv_acima_media_proporcao[adv_acima_media_proporcao['ano_distribuicao'] == ano][['oab', 'Proporcao_Sigilosos']]
+        
+        if not tabela_ano_prop.empty:
+            # 1. Ordena pela proporção (decrescente) e seleciona os 10 primeiros
+            top_10_prop_ano = tabela_ano_prop.sort_values(by='Proporcao_Sigilosos', ascending=False).head(10)
+            
+            # 2. Formata a coluna para exibição APÓS ter feito a ordenação e seleção
+            top_10_prop_ano['Proporcao_Sigilosos'] = top_10_prop_ano['Proporcao_Sigilosos'].map('{:,.2f}%'.format)
+            
+            print(top_10_prop_ano.to_string(index=False))
+        else:
+            print("  Nenhum advogado acima da média de proporção neste ano.")
+        print("-" * 50)
+    print("\n" + "="*80 + "\n")
+
     # 4) Visualização dos dados
     # Tabela resumo
     tabela_resumo = analise_top_advogados.reset_index()
