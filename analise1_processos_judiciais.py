@@ -24,11 +24,6 @@ pd.set_option('display.max_columns', None)
 # Listar os arquivos CSV na pasta 'uploads'
 arquivos_csv = glob.glob('uploads/processos_*.csv')
 
-# Verificar se foram encontrados arquivos
-if not arquivos_csv:
-    print("Nenhum arquivo processos_*.csv encontrado na pasta 'uploads'.")
-    exit()
-
 # Carregar os arquivos CSV e concatenar em um único DataFrame
 dfs = []
 for arquivo in arquivos_csv:
@@ -45,7 +40,6 @@ df = pd.concat(dfs, ignore_index=True)
 df['data_distribuicao'] = pd.to_datetime(df['data_distribuicao'], errors='coerce')
 df['data_baixa'] = pd.to_datetime(df['data_baixa'], errors='coerce')
 df['ano_distribuicao'] = df['data_distribuicao'].dt.year # Criar coluna de ano de distribuição
-
 
 # 3) Análise Comparativa entre de Processos Sigilosos e Não Sigilosos
 # Garantir que temos apenas True/False
