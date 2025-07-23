@@ -63,7 +63,7 @@ df['oab_valida'] = df['oab'].apply(is_oab_valida)
 registros_invalidos = df[df['oab_valida'] == False]
 qtd_invalidos = len(registros_invalidos)
 
-print("--- Validação de Registros de OAB (Novo Formato) ---")
+print("--- Validação de Registros de OAB ---")
 print(f"Total de registros com OAB em formato inválido ou nulo: {qtd_invalidos}")
 
 if qtd_invalidos > 0:
