@@ -150,9 +150,6 @@ if not df_validos.empty:
         print("-" * 50)
     print("\n" + "="*80 + "\n")
     
-else:
-    print("--- Não há registros válidos de OAB para análise. ---")
-
 
 
 
