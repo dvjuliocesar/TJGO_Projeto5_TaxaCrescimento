@@ -65,7 +65,7 @@ print(f"Total de registros com OAB em formato inválido ou nulo: {qtd_invalidos}
 if qtd_invalidos > 0:
     exemplos_invalidos = registros_invalidos['oab'].unique()
     print(f"Exemplos de OABs inválidas: {exemplos_invalidos}")
-print("\n" + "="*80 + "\n")
+print("\n" + "="*100 + "\n")
 
 # Dataframe com apenas OABs válidas
 df_validos = df[df['oab_valida'] == True].copy()
@@ -126,7 +126,7 @@ if not df_validos.empty:
             align='left',
             format=[None] + [','] * 9
         )
-)])
+    )])
 
     fig.update_layout(
         title='<b>Análise Comparativa de Casos Sigilosos por Advogado (2022-2024)</b>',
@@ -135,5 +135,50 @@ if not df_validos.empty:
         height=800
     )
     
+    # Criar tabela específica para as proporções de casos sigilosos
+    tabela_proporcoes = tabela_final[['oab'] + 
+                        [f'proporcao_sigilosos_{ano}' for ano in [2022, 2023, 2024]]].copy()
+
+    # Formatar as proporções como porcentagem no padrão brasileiro
+    for ano in [2022, 2023, 2024]:
+        tabela_proporcoes[f'proporcao_sigilosos_{ano}'] = tabela_proporcoes[f'proporcao_sigilosos_{ano}'].apply(
+            lambda x: f"{x:.2f}%".replace('.', ',')
+        )
+    
+    # Função para gerar cores alternadas para as linhas
+    def get_row_colors(num_rows):
+        return ['lavender' if i % 2 == 0 else 'white' for i in range(num_rows)]
+    
+    # Criar tabela Plotly para as proporções
+    fig_proporcoes = go.Figure(data=[go.Table(
+        header=dict(
+            values=['OAB'] + [f'Proporção de Sigilosos em {ano}' for ano in [2022, 2023, 2024]],
+            fill_color='#203864',
+            font=dict(color='white', size=12),
+            align='left',
+            line_color='darkslategray'
+        ),
+        cells=dict(
+            values=[tabela_proporcoes['oab']] + 
+                [tabela_proporcoes[f'proporcao_sigilosos_{ano}'] for ano in [2022, 2023, 2024]],
+            fill_color=[get_row_colors(len(tabela_proporcoes))],
+            align='left',
+            font=dict(color='black', size=12),
+            line_color='darkslategray',
+        )
+    )])
+
+    fig_proporcoes.update_layout(
+        title='<b>Proporção de Casos Sigilosos por Advogado (2022-2024)</b><br>'
+            '<i>Percentual de processos sob sigilo em relação ao total de processos</i>',
+        title_x=0.5,
+        margin=dict(l=20, r=20, t=80, b=20),
+        height=800,
+         paper_bgcolor='white',
+        plot_bgcolor='white'
+    )
+
+   
     # Exibir tabela
     fig.show()
+    fig_proporcoes.show()
