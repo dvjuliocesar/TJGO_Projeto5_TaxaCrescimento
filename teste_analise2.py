@@ -135,49 +135,88 @@ if not df_validos.empty:
         height=800
     )
     
-    # Criar tabela específica para as proporções de casos sigilosos
+    # --- TABELA DE PROPORÇÕES COM VARIAÇÃO TOTAL E MÉDIA ---
     tabela_proporcoes = tabela_final[['oab'] + 
-                        [f'proporcao_sigilosos_{ano}' for ano in [2022, 2023, 2024]]].copy()
+                            [f'proporcao_sigilosos_{ano}' for ano in [2022, 2023, 2024]]].copy()
 
-    # Formatar as proporções como porcentagem no padrão brasileiro
+    # Converter proporções para float (remover % temporariamente)
     for ano in [2022, 2023, 2024]:
-        tabela_proporcoes[f'proporcao_sigilosos_{ano}'] = tabela_proporcoes[f'proporcao_sigilosos_{ano}'].apply(
-            lambda x: f"{x:.2f}%".replace('.', ',')
-        )
-    
-    # Função para gerar cores alternadas para as linhas
+        tabela_proporcoes[f'proporcao_sigilosos_{ano}'] = tabela_proporcoes[f'proporcao_sigilosos_{ano}'].astype(float)
+
+    # Calcular Variação Total (2022 → 2024)
+    tabela_proporcoes['variacao_total'] = (
+        (tabela_proporcoes['proporcao_sigilosos_2023'] - tabela_proporcoes['proporcao_sigilosos_2022']) +
+        (tabela_proporcoes['proporcao_sigilosos_2024'] - tabela_proporcoes['proporcao_sigilosos_2023'])
+    )
+
+    # Calcular Proporção Média (2022-2024)
+    tabela_proporcoes['proporcao_media'] = tabela_proporcoes[
+        ['proporcao_sigilosos_2022', 'proporcao_sigilosos_2023', 'proporcao_sigilosos_2024']
+    ].mean(axis=1)
+
+    # Ordenar pela Variação Total (maior → menor)
+    tabela_proporcoes = tabela_proporcoes.sort_values('variacao_total', ascending=False)
+
+    # Formatar para exibição (padrão brasileiro)
+    tabela_proporcoes_formatada = tabela_proporcoes.copy()
+    for ano in [2022, 2023, 2024]:
+        tabela_proporcoes_formatada[f'proporcao_sigilosos_{ano}'] = tabela_proporcoes_formatada[
+            f'proporcao_sigilosos_{ano}'
+        ].apply(lambda x: f"{x:.2f}%".replace('.', ','))
+
+    tabela_proporcoes_formatada['variacao_total'] = tabela_proporcoes_formatada['variacao_total'].apply(
+        lambda x: f"{x:+.2f}%".replace('.', ',')  # Formato +X,YZ% ou -X,YZ%
+    )
+
+    tabela_proporcoes_formatada['proporcao_media'] = tabela_proporcoes_formatada['proporcao_media'].apply(
+        lambda x: f"{x:.2f}%".replace('.', ',')
+    )
+
+    # Função para cores alternadas (zebrado)
     def get_row_colors(num_rows):
         return ['lavender' if i % 2 == 0 else 'white' for i in range(num_rows)]
-    
-    # Criar tabela Plotly para as proporções
+
+    # Tabela Plotly das Proporções com Variação e Média
     fig_proporcoes = go.Figure(data=[go.Table(
         header=dict(
-            values=['OAB'] + [f'Proporção de Sigilosos em {ano}' for ano in [2022, 2023, 2024]],
+            values=[
+                'OAB', 
+                'Proporção de Sigilosos em 2022', 
+                'Proporção de Sigilosos em 2023', 
+                'Proporção de Sigilosos em 2024', 
+                'Variação Total', 
+                'Proporção Média'    
+            ],
             fill_color='#203864',
             font=dict(color='white', size=12),
             align='left',
             line_color='darkslategray'
         ),
         cells=dict(
-            values=[tabela_proporcoes['oab']] + 
-                [tabela_proporcoes[f'proporcao_sigilosos_{ano}'] for ano in [2022, 2023, 2024]],
-            fill_color=[get_row_colors(len(tabela_proporcoes))],
+            values=[
+                tabela_proporcoes_formatada['oab'],
+                tabela_proporcoes_formatada['proporcao_sigilosos_2022'],
+                tabela_proporcoes_formatada['proporcao_sigilosos_2023'],
+                tabela_proporcoes_formatada['proporcao_sigilosos_2024'],
+                tabela_proporcoes_formatada['variacao_total'],
+                tabela_proporcoes_formatada['proporcao_media']
+            ],
+            fill_color=[get_row_colors(len(tabela_proporcoes_formatada))],
             align='left',
-            font=dict(color='black', size=12),
-            line_color='darkslategray',
+            font=dict(color='black', size=11),
+            line_color='darkslategray'
         )
     )])
 
     fig_proporcoes.update_layout(
         title='<b>Proporção de Casos Sigilosos por Advogado (2022-2024)</b><br>'
-            '<i>Percentual de processos sob sigilo em relação ao total de processos</i>',
+              '<i>Ordenado por Variação Total</i>',
         title_x=0.5,
-        margin=dict(l=20, r=20, t=80, b=20),
+        margin=dict(l=20, r=20, t=100, b=20),
         height=800,
-         paper_bgcolor='white',
+        paper_bgcolor='white',
         plot_bgcolor='white'
     )
-
    
     # Exibir tabela
     fig.show()
