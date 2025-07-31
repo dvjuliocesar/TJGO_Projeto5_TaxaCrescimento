@@ -4,17 +4,22 @@ Análise de Processos Judiciais Sigilosos e Não Sigilosos:
 e não sigilosos ao longo dos anos. Ele gera tabelas e gráficos para visualização dos dados.
 '''
 
-# Bibliotecas
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns   
-from datetime import datetime
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+# --- BIBLIOTECAS NECESSÁRIAS ---
+# Manipulação de dados e cálculos numéricos
+import pandas as pd 
+import numpy as np  
+# Visualização estática (gráficos tradicionais)
+import matplotlib.pyplot as plt 
+import seaborn as sns            
+# Manipulação de datas
+from datetime import datetime  
+# Visualização interativa e dinâmica
+import plotly.express as px     
+import plotly.graph_objects as go 
+from plotly.subplots import make_subplots 
+# Manipulação de arquivos e sistemas
 import glob
-import os
+import os 
 
 # Configurações Iniciais
 plt.style.use('ggplot')
