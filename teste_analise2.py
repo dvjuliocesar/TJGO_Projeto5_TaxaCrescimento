@@ -59,13 +59,13 @@ df['oab_valida'] = df['oab'].apply(is_oab_valida)
 registros_invalidos = df[df['oab_valida'] == False]
 qtd_invalidos = len(registros_invalidos)
 
-print("--- Validação de Registros de OAB ---")
+'''print("--- Validação de Registros de OAB ---")
 print(f"Total de registros com OAB em formato inválido ou nulo: {qtd_invalidos}")
 
 if qtd_invalidos > 0:
     exemplos_invalidos = registros_invalidos['oab'].unique()
     print(f"Exemplos de OABs inválidas: {exemplos_invalidos}")
-print("\n" + "="*100 + "\n")
+print("\n" + "="*100 + "\n")'''
 
 # Dataframe com apenas OABs válidas
 df_validos = df[df['oab_valida'] == True].copy()
