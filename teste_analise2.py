@@ -70,7 +70,7 @@ print("\n" + "="*100 + "\n")'''
 # Dataframe com apenas OABs válidas
 df_validos = df[df['oab_valida'] == True].copy()
 
-# --- 3) Análise e Geração da Tabela ---
+# --- 3) Análise de Dados ---
 if not df_validos.empty:
     # Expandir múltiplos advogados por processo
     df_advogados = df_validos.assign(oab=df_validos['oab'].str.split(';')).explode('oab')
@@ -185,10 +185,85 @@ if not df_validos.empty:
               '<i>Ordenado por Variação Total</i>',
         title_x=0.5,
         margin=dict(l=20, r=20, t=100, b=20),
-        height=800,
+        height=900,
         paper_bgcolor='white',
         plot_bgcolor='white'
     )
    
-    # Exibir tabela
+    # --- GRÁFICO DE EVOLUÇÃO TEMPORAL POR ADVOGADO (TOP 10) --- 
+    # Preparar dados para o gráfico
+    top_advogados = tabela_proporcoes.nlargest(10, 'variacao_total')
+    dados_grafico = top_advogados.melt(id_vars=['oab'], 
+                                    value_vars=['proporcao_sigilosos_2022', 'proporcao_sigilosos_2023', 'proporcao_sigilosos_2024'],
+                                    var_name='ano',
+                                    value_name='proporcao')
+
+    # Converter anos para formato mais limpo
+    dados_grafico['ano'] = dados_grafico['ano'].str.extract('(\d+)').astype(int)
+
+    # Criar gráfico
+    fig_top_10 = px.line(dados_grafico, 
+                x='ano', 
+                y='proporcao', 
+                color='oab',
+                markers=True,
+                title='<b>Evolução da Proporção de Casos Sigilosos (Top 10 Advogados)</b>',
+                labels={'proporcao': 'Proporção de Casos Sigilosos (%)', 'ano': 'Ano'})
+
+    fig_top_10.update_layout(
+        hovermode='x unified',
+        yaxis=dict(tickformat=".2f%"),
+        xaxis=dict(tickmode='linear', dtick=1),
+        title_x=0.5,
+        margin=dict(l=20, r=20, t=100, b=20),
+        height=900,
+        legend_title_text='OAB'
+    )
+
+    # --- GRÁFICO DE DISPERSÃO ESTRATÉGICO ---
+
+    # Calcular a média geral da proporção para usar como linha de referência
+    media_geral_proporcao = tabela_proporcoes['proporcao_media'].mean()
+
+    # Criar o gráfico de dispersão
+    fig_dispersao = px.scatter(
+        tabela_proporcoes,
+        x='proporcao_media',
+        y='variacao_total',
+        title='<b>Análise Estratégica de Advogados: Variação vs. Proporção Média de Casos Sigilosos</b>',
+        labels={
+            'proporcao_media': 'Proporção Média de Casos Sigilosos (%)',
+            'variacao_total': 'Variação da Proporção (2024 vs 2022)'
+        },
+        hover_name='oab', # Mostra a OAB no topo do hover
+        hover_data={ # Informações extras no hover
+            'proporcao_sigilosos_2022': ':.2f',
+            'proporcao_sigilosos_2023': ':.2f',
+            'proporcao_sigilosos_2024': ':.2f'
+        }
+    )
+
+    # Adicionar linha horizontal em Y=0 (sem variação)
+    fig_dispersao.add_hline(y=0, line_dash="dash", line_color="grey")
+
+    # Adicionar linha vertical na média da proporção
+    fig_dispersao.add_vline(x=media_geral_proporcao, line_dash="dash", line_color="grey")
+
+    # Adicionar anotações para explicar os quadrantes
+    fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total'].max()*0.9, text="<b>Especialistas em Expansão</b>", showarrow=False, bgcolor="#e3f2fd", xanchor='right')
+    fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total'].max()*0.9, text="<b>Novos Focos de Atuação</b>", showarrow=False, bgcolor="#e8f5e9", xanchor='left')
+    fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total'].min()*0.9, text="<b>Fora do Foco</b>", showarrow=False, bgcolor="#ffebee", xanchor='left')
+    fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total'].min()*0.9, text="<b>Especialistas em Transição</b>", showarrow=False, bgcolor="#fff3e0", xanchor='right')
+
+    # Ajustar o layout do gráfico de dispersão
+    fig_dispersao.update_layout(title_x=0.5)
+    fig_dispersao.update_yaxes(ticksuffix="%")
+    fig_dispersao.update_xaxes(ticksuffix="%")
+
+    # Exibição dos resultados
     fig_proporcoes.show()
+    fig_top_10.show()
+    fig_dispersao.show()
+
+    
+
