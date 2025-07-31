@@ -2,18 +2,24 @@
 - Este script analisa dados de processos judiciais, focando na validação de números de OAB
 e na proporção de processos sigilosos por advogado. Ele gera tabelas e gráficos para visualização dos dados.'''
 
-# Bibliotecas
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns   
-from datetime import datetime
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+# --- BIBLIOTECAS NECESSÁRIAS ---
+# Manipulação de dados e cálculos numéricos
+import pandas as pd 
+import numpy as np  
+# Visualização estática (gráficos tradicionais)
+import matplotlib.pyplot as plt 
+import seaborn as sns            
+# Manipulação de datas
+from datetime import datetime  
+# Visualização interativa e dinâmica
+import plotly.express as px     
+import plotly.graph_objects as go 
+from plotly.subplots import make_subplots 
+# Manipulação de arquivos e sistemas
 import glob
-import os
-import re
+import os  
+# Expressões regulares
+import re 
 
 # Configurações Iniciais
 plt.style.use('ggplot')
