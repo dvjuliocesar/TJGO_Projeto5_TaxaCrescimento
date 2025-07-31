@@ -107,34 +107,6 @@ if not df_validos.empty:
         for col in [f'sigilosos_{ano}', f'nao_sigilosos_{ano}', f'total_{ano}']:
             tabela_final[col] = tabela_final[col].astype(int)
 
-    # Tabela Plotly interativa
-    fig = go.Figure(data=[go.Table(
-        header=dict(
-            values=['OAB'] + 
-                [f'{tipo} {ano}' for ano in [2022, 2023, 2024] 
-                    for tipo in ['Sigilosos', 'Não Sigilosos', 'Total', 'Proporção Sigilosos']],
-            fill_color='#203864',
-            font=dict(color='white', size=12),
-            align='left'
-        ),
-        cells=dict(
-            values=[tabela_final['oab']] + 
-                [tabela_final[f'{tipo.lower().replace("ã", "a")}_{ano}'] 
-                    for ano in [2022, 2023, 2024] 
-                    for tipo in ['Sigilosos', 'Nao_sigilosos', 'Total', 'proporcao_sigilosos']],
-            fill_color='lavender',
-            align='left',
-            format=[None] + [','] * 9
-        )
-    )])
-
-    fig.update_layout(
-        title='<b>Análise Comparativa de Casos Sigilosos por Advogado (2022-2024)</b>',
-        title_x=0.5,
-        margin=dict(l=20, r=20, t=60, b=20),
-        height=800
-    )
-    
     # --- TABELA DE PROPORÇÕES COM VARIAÇÃO TOTAL E MÉDIA ---
     tabela_proporcoes = tabela_final[['oab'] + 
                             [f'proporcao_sigilosos_{ano}' for ano in [2022, 2023, 2024]]].copy()
@@ -219,5 +191,4 @@ if not df_validos.empty:
     )
    
     # Exibir tabela
-    fig.show()
     fig_proporcoes.show()
