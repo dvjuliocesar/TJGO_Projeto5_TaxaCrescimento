@@ -97,6 +97,8 @@ if not df_validos.empty:
 
         total[f'proporcao_sigilosos_{ano}'] = (total[f'sigilosos_{ano}'] / total[f'total_{ano}'].round(4) * 100)
 
+        total[f'proporcao_nao_sigilosos_{ano}'] = (total[f'nao_sigilosos_{ano}'] / total[f'total_{ano}'].round(4) * 100)
+
         return total
     
     # Processar dados para cada ano
@@ -115,25 +117,38 @@ if not df_validos.empty:
 
     # --- TABELA DE PROPORÇÕES COM VARIAÇÃO TOTAL E MÉDIA ---
     tabela_proporcoes = tabela_final[['oab'] + 
-                            [f'proporcao_sigilosos_{ano}' for ano in [2022, 2023, 2024]]].copy()
-
+                            [f'proporcao_sigilosos_{ano}' for ano in [2022, 2023, 2024]].copy() +
+                            [f'proporcao_nao_sigilosos_{ano}' for ano in [2022, 2023, 2024]]].copy()
+                
     # Converter proporções para float (remover % temporariamente)
     for ano in [2022, 2023, 2024]:
         tabela_proporcoes[f'proporcao_sigilosos_{ano}'] = tabela_proporcoes[f'proporcao_sigilosos_{ano}'].astype(float)
+        tabela_proporcoes[f'proporcao_nao_sigilosos_{ano}'] = tabela_proporcoes[f'proporcao_nao_sigilosos_{ano}'].astype(float)
 
-    # Calcular Variação Total (2022 → 2024)
-    tabela_proporcoes['variacao_total'] = (
+    # Calcular Variação de Sigilosos Total (2022 → 2024)
+    tabela_proporcoes['variacao_total_sigilosos'] = (
         (tabela_proporcoes['proporcao_sigilosos_2023'] - tabela_proporcoes['proporcao_sigilosos_2022']) +
         (tabela_proporcoes['proporcao_sigilosos_2024'] - tabela_proporcoes['proporcao_sigilosos_2023'])
     )
 
-    # Calcular Proporção Média (2022-2024)
-    tabela_proporcoes['proporcao_media'] = tabela_proporcoes[
+    # Calcular Variação de Não Sigilosos Total (2022 → 2024)
+    tabela_proporcoes['variacao_total_nao_sigilosos'] = (
+        (tabela_proporcoes['proporcao_nao_sigilosos_2023'] - tabela_proporcoes['proporcao_nao_sigilosos_2022']) +
+        (tabela_proporcoes['proporcao_nao_sigilosos_2024'] - tabela_proporcoes['proporcao_nao_sigilosos_2023'])
+    )
+
+    # Calcular Proporção Média de Sigilosos (2022-2024)
+    tabela_proporcoes['proporcao_media_sigilosos'] = tabela_proporcoes[
         ['proporcao_sigilosos_2022', 'proporcao_sigilosos_2023', 'proporcao_sigilosos_2024']
     ].mean(axis=1)
 
+    # Calcular a proporção Média de Não Sigilosos (2022-2024)
+    tabela_proporcoes['proporcao_media_nao_sigilosos'] = tabela_proporcoes[
+        ['proporcao_nao_sigilosos_2022', 'proporcao_nao_sigilosos_2023', 'proporcao_nao_sigilosos_2024']
+    ].mean(axis=1)
+
     # Ordenar pela Variação Total (maior → menor)
-    tabela_proporcoes = tabela_proporcoes.sort_values('variacao_total', ascending=False)
+    tabela_proporcoes = tabela_proporcoes.sort_values('variacao_total_sigilosos', ascending=False)
 
     # Formatar para exibição (padrão brasileiro)
     tabela_proporcoes_formatada = tabela_proporcoes.copy()
@@ -141,12 +156,25 @@ if not df_validos.empty:
         tabela_proporcoes_formatada[f'proporcao_sigilosos_{ano}'] = tabela_proporcoes_formatada[
             f'proporcao_sigilosos_{ano}'
         ].apply(lambda x: f"{x:.2f}%".replace('.', ','))
+    
+    for ano in [2022, 2023, 2024]:
+        tabela_proporcoes_formatada[f'proporcao_nao_sigilosos_{ano}'] = tabela_proporcoes_formatada[
+            f'proporcao_nao_sigilosos_{ano}'
+        ].apply(lambda x: f"{x:.2f}%".replace('.', ','))
 
-    tabela_proporcoes_formatada['variacao_total'] = tabela_proporcoes_formatada['variacao_total'].apply(
-        lambda x: f"{x:+.2f}%".replace('.', ',')  # Formato +X,YZ% ou -X,YZ%
+    tabela_proporcoes_formatada['variacao_total_sigilosos'] = tabela_proporcoes_formatada['variacao_total_sigilosos'].apply(
+        lambda x: f"{x:+.2f}%".replace('.', ',') 
     )
 
-    tabela_proporcoes_formatada['proporcao_media'] = tabela_proporcoes_formatada['proporcao_media'].apply(
+    tabela_proporcoes_formatada['variacao_total_nao_sigilosos'] = tabela_proporcoes_formatada['variacao_total_nao_sigilosos'].apply(
+        lambda x: f"{x:+.2f}%".replace('.', ',')
+    ) 
+
+    tabela_proporcoes_formatada['proporcao_media_sigilosos'] = tabela_proporcoes_formatada['proporcao_media_sigilosos'].apply(
+        lambda x: f"{x:.2f}%".replace('.', ',')
+    )
+
+    tabela_proporcoes_formatada['proporcao_media_nao_sigilosos'] = tabela_proporcoes_formatada['proporcao_media_nao_sigilosos'].apply(
         lambda x: f"{x:.2f}%".replace('.', ',')
     )
 
@@ -162,8 +190,13 @@ if not df_validos.empty:
                 'Proporção de Sigilosos em 2022', 
                 'Proporção de Sigilosos em 2023', 
                 'Proporção de Sigilosos em 2024', 
-                'Variação Total', 
-                'Proporção Média'    
+                'Variação Total de Sigilosos', 
+                'Proporção Média de Sigilosos',
+                'Proporção de Não Sigilosos em 2022',
+                'Proporção de Não Sigilosos em 2023',
+                'Proporção de Não Sigilosos em 2024',
+                'Variação Total de Não Sigilosos',
+                'Proporção Média de Não Sigilosos'  
             ],
             fill_color='#203864',
             font=dict(color='white', size=12),
@@ -176,8 +209,13 @@ if not df_validos.empty:
                 tabela_proporcoes_formatada['proporcao_sigilosos_2022'],
                 tabela_proporcoes_formatada['proporcao_sigilosos_2023'],
                 tabela_proporcoes_formatada['proporcao_sigilosos_2024'],
-                tabela_proporcoes_formatada['variacao_total'],
-                tabela_proporcoes_formatada['proporcao_media']
+                tabela_proporcoes_formatada['variacao_total_sigilosos'],
+                tabela_proporcoes_formatada['proporcao_media_sigilosos'],
+                tabela_proporcoes_formatada['proporcao_nao_sigilosos_2022'],
+                tabela_proporcoes_formatada['proporcao_nao_sigilosos_2023'],
+                tabela_proporcoes_formatada['proporcao_nao_sigilosos_2024'],
+                tabela_proporcoes_formatada['variacao_total_nao_sigilosos'],
+                tabela_proporcoes_formatada['proporcao_media_nao_sigilosos']
             ],
             fill_color=[get_row_colors(len(tabela_proporcoes_formatada))],
             align='left',
@@ -198,9 +236,12 @@ if not df_validos.empty:
    
     # --- GRÁFICO DE EVOLUÇÃO TEMPORAL POR ADVOGADO (TOP 10) --- 
     # Preparar dados para o gráfico
-    top_advogados = tabela_proporcoes.nlargest(10, 'variacao_total')
+    top_advogados = tabela_proporcoes.nlargest(10, 'variacao_total_sigilosos')
     dados_grafico = top_advogados.melt(id_vars=['oab'], 
-                                    value_vars=['proporcao_sigilosos_2022', 'proporcao_sigilosos_2023', 'proporcao_sigilosos_2024'],
+                                    value_vars=[
+                                        'proporcao_sigilosos_2022', 
+                                        'proporcao_sigilosos_2023', 
+                                        'proporcao_sigilosos_2024'],
                                     var_name='ano',
                                     value_name='proporcao')
 
@@ -229,17 +270,17 @@ if not df_validos.empty:
     # --- GRÁFICO DE DISPERSÃO ESTRATÉGICO ---
 
     # Calcular a média geral da proporção para usar como linha de referência
-    media_geral_proporcao = tabela_proporcoes['proporcao_media'].mean()
+    media_proporcao_sigilosos = tabela_proporcoes['proporcao_media_sigilosos'].mean()
 
     # Criar o gráfico de dispersão
     fig_dispersao = px.scatter(
         tabela_proporcoes,
-        x='proporcao_media',
-        y='variacao_total',
+        x='proporcao_media_sigilosos',
+        y='variacao_total_sigilosos',
         title='<b>Análise Estratégica de Advogados: Variação vs. Proporção Média de Casos Sigilosos</b>',
         labels={
-            'proporcao_media': 'Proporção Média de Casos Sigilosos (%)',
-            'variacao_total': 'Variação da Proporção (2024 vs 2022)'
+            'proporcao_media_sigilosos': 'Proporção Média de Casos Sigilosos (%)',
+            'variacao_total_sigilosos': 'Variação da Proporção (2024 vs 2022)'
         },
         hover_name='oab', # Mostra a OAB no topo do hover
         hover_data={ # Informações extras no hover
@@ -253,23 +294,104 @@ if not df_validos.empty:
     fig_dispersao.add_hline(y=0, line_dash="dash", line_color="grey")
 
     # Adicionar linha vertical na média da proporção
-    fig_dispersao.add_vline(x=media_geral_proporcao, line_dash="dash", line_color="grey")
+    fig_dispersao.add_vline(x=media_proporcao_sigilosos, line_dash="dash", line_color="grey")
 
     # Adicionar anotações para explicar os quadrantes
-    fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total'].max()*0.9, text="<b>Especialistas em Expansão</b>", showarrow=False, bgcolor="#e3f2fd", xanchor='right')
-    fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total'].max()*0.9, text="<b>Novos Focos de Atuação</b>", showarrow=False, bgcolor="#e8f5e9", xanchor='left')
-    fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total'].min()*0.9, text="<b>Fora do Foco</b>", showarrow=False, bgcolor="#ffebee", xanchor='left')
-    fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total'].min()*0.9, text="<b>Especialistas em Transição</b>", showarrow=False, bgcolor="#fff3e0", xanchor='right')
+    fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total_sigilosos'].max()*0.9, text="<b>Especialistas em Expansão</b>", showarrow=False, bgcolor="#e3f2fd", xanchor='right')
+    fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total_sigilosos'].max()*0.9, text="<b>Novos Focos de Atuação</b>", showarrow=False, bgcolor="#e8f5e9", xanchor='left')
+    fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total_sigilosos'].min()*0.9, text="<b>Fora do Foco</b>", showarrow=False, bgcolor="#ffebee", xanchor='left')
+    fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total_sigilosos'].min()*0.9, text="<b>Especialistas em Transição</b>", showarrow=False, bgcolor="#fff3e0", xanchor='right')
 
     # Ajustar o layout do gráfico de dispersão
     fig_dispersao.update_layout(title_x=0.5)
     fig_dispersao.update_yaxes(ticksuffix="%")
     fig_dispersao.update_xaxes(ticksuffix="%")
 
+    # --- GRÁFICO DE DISPERSÃO ESTRATÉGICO COM SUBPLOTS (SIGILOSOS vs. NÃO SIGILOSOS) ---
+
+    # 1. Preparar a figura com 1 linha e 2 colunas
+    fig_dispersao_comparativa = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=("Análise de Casos Sigilosos", "Análise de Casos Não Sigilosos")
+    )
+
+    # --- Gráfico da Esquerda: CASOS SIGILOSOS ---
+
+    # 2. Adicionar o traço (trace) do scatter plot para casos sigilosos
+    fig_dispersao_comparativa.add_trace(
+        go.Scatter(
+            x=tabela_proporcoes['proporcao_media_sigilosos'],
+            y=tabela_proporcoes['variacao_total_sigilosos'],
+            mode='markers',
+            marker=dict(color='#203864'),
+            text=tabela_proporcoes['oab'], # Usado para o hover
+            hovertemplate='<b>OAB:</b> %{text}<br>' +
+                        '<b>Proporção Média:</b> %{x:.2f}%<br>' +
+                        '<b>Variação:</b> %{y:+.2f}%<extra></extra>'
+        ),
+        row=1, col=1
+    )
+
+    # 3. Adicionar as linhas de referência para os quadrantes de casos sigilosos
+    media_proporcao_sigilosos = tabela_proporcoes['proporcao_media_sigilosos'].mean()
+    fig_dispersao_comparativa.add_hline(y=0, line_dash="dash", line_color="grey", row=1, col=1)
+    fig_dispersao_comparativa.add_vline(x=media_proporcao_sigilosos, line_dash="dash", line_color="grey", row=1, col=1)
+
+    # 4. Adicionar anotações para explicar os quadrantes
+    fig_dispersao_comparativa.add_annotation(x=95, y=tabela_proporcoes['variacao_total_sigilosos'].max()*0.9, text="<b>Especialistas em Expansão</b>", showarrow=False, bgcolor="#e3f2fd", xanchor='right', row=1, col=1)
+    fig_dispersao_comparativa.add_annotation(x=5, y=tabela_proporcoes['variacao_total_sigilosos'].max()*0.9, text="<b>Novos Focos de Atuação</b>", showarrow=False, bgcolor="#e8f5e9", xanchor='left', row=1, col=1)
+    fig_dispersao_comparativa.add_annotation(x=5, y=tabela_proporcoes['variacao_total_sigilosos'].min()*0.9, text="<b>Fora do Foco</b>", showarrow=False, bgcolor="#ffebee", xanchor='left', row=1, col=1)
+    fig_dispersao_comparativa.add_annotation(x=95, y=tabela_proporcoes['variacao_total_sigilosos'].min()*0.9, text="<b>Especialistas em Transição</b>", showarrow=False, bgcolor="#fff3e0", xanchor='right', row=1, col=1)
+    
+    # --- Gráfico da Direita: CASOS NÃO SIGILOSOS ---
+
+    # 5. Adicionar o traço do scatter plot para casos não sigilosos
+    fig_dispersao_comparativa.add_trace(
+        go.Scatter(
+            x=tabela_proporcoes['proporcao_media_nao_sigilosos'],
+            y=tabela_proporcoes['variacao_total_nao_sigilosos'],
+            mode='markers',
+            marker=dict(color='#4375D3'), # Cor diferente para distinguir
+            text=tabela_proporcoes['oab'],
+            hovertemplate='<b>OAB:</b> %{text}<br>' +
+                        '<b>Proporção Média:</b> %{x:.2f}%<br>' +
+                        '<b>Variação:</b> %{y:+.2f}%<extra></extra>'
+        ),
+        row=1, col=2
+    )
+
+    # 6. Adicionar as linhas de referência para os quadrantes de casos não sigilosos
+    media_proporcao_nao_sigilosos = tabela_proporcoes['proporcao_media_nao_sigilosos'].mean()
+    fig_dispersao_comparativa.add_hline(y=0, line_dash="dash", line_color="grey", row=1, col=2)
+    fig_dispersao_comparativa.add_vline(x=media_proporcao_nao_sigilosos, line_dash="dash", line_color="grey", row=1, col=2)
+    
+    # 7. Adicionar anotações para explicar os quadrantes
+    fig_dispersao_comparativa.add_annotation(x=95, y=tabela_proporcoes['variacao_total_nao_sigilosos'].max()*0.9, text="<b>Especialistas em Expansão</b>", showarrow=False, bgcolor="#e3f2fd", xanchor='right', row=1, col=2)
+    fig_dispersao_comparativa.add_annotation(x=5, y=tabela_proporcoes['variacao_total_nao_sigilosos'].max()*0.9, text="<b>Novos Focos de Atuação</b>", showarrow=False, bgcolor="#e8f5e9", xanchor='left', row=1, col=2)
+    fig_dispersao_comparativa.add_annotation(x=5, y=tabela_proporcoes['variacao_total_nao_sigilosos'].min()*0.9, text="<b>Fora do Foco</b>", showarrow=False, bgcolor="#ffebee", xanchor='left', row=1, col=2)
+    fig_dispersao_comparativa.add_annotation(x=95, y=tabela_proporcoes['variacao_total_nao_sigilosos'].min()*0.9, text="<b>Especialistas em Transição</b>", showarrow=False, bgcolor="#fff3e0", xanchor='right', row=1, col=2)
+
+    # --- ATUALIZAÇÕES GERAIS DE LAYOUT ---
+
+    # 8. Atualizar os títulos dos eixos e o título principal
+    fig_dispersao_comparativa.update_xaxes(title_text="Proporção Média de Casos Sigilosos (%)", row=1, col=1)
+    fig_dispersao_comparativa.update_yaxes(title_text="Variação da Proporção (24 vs 22)", row=1, col=1)
+
+    fig_dispersao_comparativa.update_xaxes(title_text="Proporção Média de Casos Não Sigilosos (%)", row=1, col=2)
+    fig_dispersao_comparativa.update_yaxes(title_text="Variação da Proporção (24 vs 22)", row=1, col=2)
+
+    fig_dispersao_comparativa.update_layout(
+        title_text='<b>Análise Estratégica Comparativa: Foco em Casos Sigilosos vs. Não Sigilosos</b>',
+        title_x=0.5,
+        height=800,
+        showlegend=False # A legenda não é necessária, pois os títulos dos subplots explicam
+    )
+
     # Exibição dos resultados
     fig_proporcoes.show()
-    fig_top_10.show()
+    #fig_top_10.show()
     fig_dispersao.show()
+    fig_dispersao_comparativa.show()
 
     
 
