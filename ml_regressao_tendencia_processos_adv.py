@@ -1,17 +1,15 @@
-# -- BIBLIOTECAS --
+# -- BIBLIOTECAS NECESSÁRIAS --
 # Manipulação de dados
 import pandas as pd
 import numpy as np
 import glob
 import re
-
 # Visualização
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.express as px
 import seaborn as sns
 from statsmodels.graphics.gofplots import qqplot
-
 # Machine Learning e Estatística
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
