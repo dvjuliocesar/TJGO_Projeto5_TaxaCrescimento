@@ -267,46 +267,6 @@ if not df_validos.empty:
         legend_title_text='OAB'
     )
 
-    # --- GRÁFICO DE DISPERSÃO ESTRATÉGICO ---
-
-    # Calcular a média geral da proporção para usar como linha de referência
-    media_proporcao_sigilosos = tabela_proporcoes['proporcao_media_sigilosos'].mean()
-
-    # Criar o gráfico de dispersão
-    fig_dispersao = px.scatter(
-        tabela_proporcoes,
-        x='proporcao_media_sigilosos',
-        y='variacao_total_sigilosos',
-        title='<b>Análise Estratégica de Advogados: Variação vs. Proporção Média de Casos Sigilosos</b>',
-        labels={
-            'proporcao_media_sigilosos': 'Proporção Média de Casos Sigilosos (%)',
-            'variacao_total_sigilosos': 'Variação da Proporção (2024 vs 2022)'
-        },
-        hover_name='oab', # Mostra a OAB no topo do hover
-        hover_data={ # Informações extras no hover
-            'proporcao_sigilosos_2022': ':.2f',
-            'proporcao_sigilosos_2023': ':.2f',
-            'proporcao_sigilosos_2024': ':.2f'
-        }
-    )
-
-    # Adicionar linha horizontal em Y=0 (sem variação)
-    fig_dispersao.add_hline(y=0, line_dash="dash", line_color="grey")
-
-    # Adicionar linha vertical na média da proporção
-    fig_dispersao.add_vline(x=media_proporcao_sigilosos, line_dash="dash", line_color="grey")
-
-    # Adicionar anotações para explicar os quadrantes
-    fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total_sigilosos'].max()*0.9, text="<b>Especialistas em Expansão</b>", showarrow=False, bgcolor="#e3f2fd", xanchor='right')
-    fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total_sigilosos'].max()*0.9, text="<b>Novos Focos de Atuação</b>", showarrow=False, bgcolor="#e8f5e9", xanchor='left')
-    fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total_sigilosos'].min()*0.9, text="<b>Fora do Foco</b>", showarrow=False, bgcolor="#ffebee", xanchor='left')
-    fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total_sigilosos'].min()*0.9, text="<b>Especialistas em Transição</b>", showarrow=False, bgcolor="#fff3e0", xanchor='right')
-
-    # Ajustar o layout do gráfico de dispersão
-    fig_dispersao.update_layout(title_x=0.5)
-    fig_dispersao.update_yaxes(ticksuffix="%")
-    fig_dispersao.update_xaxes(ticksuffix="%")
-
     # --- GRÁFICO DE DISPERSÃO ESTRATÉGICO COM SUBPLOTS (SIGILOSOS vs. NÃO SIGILOSOS) ---
 
     # 1. Preparar a figura com 1 linha e 2 colunas
@@ -327,7 +287,13 @@ if not df_validos.empty:
             text=tabela_proporcoes['oab'], # Usado para o hover
             hovertemplate='<b>OAB:</b> %{text}<br>' +
                         '<b>Proporção Média:</b> %{x:.2f}%<br>' +
-                        '<b>Variação:</b> %{y:+.2f}%<extra></extra>'
+                        '<b>Variação:</b> %{y:.2f}%<br>' + 
+                        '<b>Proporção Sigilosos 2022:</b> %{customdata[0]:.2f}%<br>' +
+                        '<b>Proporção Sigilosos 2023:</b> %{customdata[1]:.2f}%<br>' +
+                        '<b>Proporção Sigilosos 2024:</b> %{customdata[2]:.2f}%<br>',
+            customdata=tabela_proporcoes[['proporcao_sigilosos_2022', 
+                                          'proporcao_sigilosos_2023', 
+                                          'proporcao_sigilosos_2024']].values
         ),
         row=1, col=1
     )
@@ -353,17 +319,24 @@ if not df_validos.empty:
             mode='markers',
             marker=dict(color='#4375D3'), # Cor diferente para distinguir
             text=tabela_proporcoes['oab'],
-            hovertemplate='<b>OAB:</b> %{text}<br>' +
+            hovertemplate=
+                        '<b>OAB:</b> %{text}<br>' +
                         '<b>Proporção Média:</b> %{x:.2f}%<br>' +
-                        '<b>Variação:</b> %{y:+.2f}%<extra></extra>'
-        ),
-        row=1, col=2
+                        '<b>Variação:</b> %{y:.2f}%<br>' +
+                        '<b>Proporção Não Sigilosos 2022:</b> %{customdata[0]:.2f}%<br>' +
+                        '<b>Proporção Não Sigilosos 2023:</b> %{customdata[1]:.2f}%<br>' +
+                        '<b>Proporção Não Sigilosos 2024:</b> %{customdata[2]:.2f}%<br>',
+            customdata=tabela_proporcoes[['proporcao_nao_sigilosos_2022', 
+                                          'proporcao_nao_sigilosos_2023',
+                                            'proporcao_nao_sigilosos_2024']].values
+        ), 
+        row=1, col=2         
     )
 
     # 6. Adicionar as linhas de referência para os quadrantes de casos não sigilosos
     media_proporcao_nao_sigilosos = tabela_proporcoes['proporcao_media_nao_sigilosos'].mean()
-    fig_dispersao_comparativa.add_hline(y=0, line_dash="dash", line_color="grey", row=1, col=2)
-    fig_dispersao_comparativa.add_vline(x=media_proporcao_nao_sigilosos, line_dash="dash", line_color="grey", row=1, col=2)
+    fig_dispersao_comparativa.add_hline(y=0, line_dash="dash", line_color="black", row=1, col=2)
+    fig_dispersao_comparativa.add_vline(x=media_proporcao_nao_sigilosos, line_dash="dash", line_color="black", row=1, col=2)
     
     # 7. Adicionar anotações para explicar os quadrantes
     fig_dispersao_comparativa.add_annotation(x=95, y=tabela_proporcoes['variacao_total_nao_sigilosos'].max()*0.9, text="<b>Especialistas em Expansão</b>", showarrow=False, bgcolor="#e3f2fd", xanchor='right', row=1, col=2)
@@ -375,23 +348,23 @@ if not df_validos.empty:
 
     # 8. Atualizar os títulos dos eixos e o título principal
     fig_dispersao_comparativa.update_xaxes(title_text="Proporção Média de Casos Sigilosos (%)", row=1, col=1)
-    fig_dispersao_comparativa.update_yaxes(title_text="Variação da Proporção (24 vs 22)", row=1, col=1)
+    fig_dispersao_comparativa.update_yaxes(title_text="Variação da Proporção (2024 - 2022)", row=1, col=1)
 
     fig_dispersao_comparativa.update_xaxes(title_text="Proporção Média de Casos Não Sigilosos (%)", row=1, col=2)
-    fig_dispersao_comparativa.update_yaxes(title_text="Variação da Proporção (24 vs 22)", row=1, col=2)
+    fig_dispersao_comparativa.update_yaxes(title_text="Variação da Proporção (2024 - 2022)", row=1, col=2)
 
     fig_dispersao_comparativa.update_layout(
-        title_text='<b>Análise Estratégica Comparativa: Foco em Casos Sigilosos vs. Não Sigilosos</b>',
+        title_text='<b>Análise Estratégica Comparativa: Foco em Casos Sigilosos VS Não Sigilosos</b>',
         title_x=0.5,
         height=800,
         showlegend=False # A legenda não é necessária, pois os títulos dos subplots explicam
     )
-
+    
     # Exibição dos resultados
     fig_proporcoes.show()
-    #fig_top_10.show()
-    fig_dispersao.show()
     fig_dispersao_comparativa.show()
+    #fig_top_10.show()
+
 
     
 
