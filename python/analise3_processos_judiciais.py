@@ -43,4 +43,25 @@ df['is_segredo_justica'] = df['is_segredo_justica'].astype(bool)
 # 3) Analise de dados para Serventias
 # Processar dados por ano
 
+# Dataframe serventia 
+
+
+
+def processar_dados(df, ano):
+        df_ano = df[df['ano_distribuicao'] ==ano]
+        sigilosos = df_ano[df_ano['is_segredo_justica']].groupby('serventia')['processo'].nunique()
+        nao_sigilosos = df_ano[~df_ano['is_segredo_justica']].groupby('serventia')['processo'].nunique()
+
+        total = pd.DataFrame({
+            f'sigilosos_{ano}': sigilosos,
+            f'nao_sigilosos_{ano}': nao_sigilosos
+        }).fillna(0)
+
+        total[f'total_{ano}'] = total[f'sigilosos_{ano}'] + total[f'nao_sigilosos_{ano}']
+
+        total[f'proporcao_sigilosos_{ano}'] = (total[f'sigilosos_{ano}'] / total[f'total_{ano}'].round(4) * 100)
+
+        total[f'proporcao_nao_sigilosos_{ano}'] = (total[f'nao_sigilosos_{ano}'] / total[f'total_{ano}'].round(4) * 100)
+
+        return total
 
