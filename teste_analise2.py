@@ -385,7 +385,7 @@ if not df_validos.empty:
     fig_dispersao.update_yaxes(ticksuffix="%")
 
     # Exibição dos resultados
-    #fig_proporcoes.show()
+    fig_proporcoes.show()
     fig_dispersao.show()
     #fig_top_10.show()
 
