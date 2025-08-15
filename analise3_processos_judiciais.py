@@ -1,12 +1,14 @@
+'''Análise de Processos Judiciais - Serentias e Sigilos:
+- Este script analisa dados de processos judiciais, focando no número de processos e
+na proporção de processos sigilosos por Serventia. Ele gera tabelas e gráficos para visualização dos dados.'''
+
+
 # --- BIBLIOTECAS NECESSÁRIAS ---
 # Manipulação de dados e cálculos numéricos
 import pandas as pd 
 import numpy as np  
 # Visualização estática (gráficos tradicionais)
-import matplotlib.pyplot as plt 
-import seaborn as sns            
 # Manipulação de datas
-from datetime import datetime  
 # Visualização interativa e dinâmica
 import plotly.express as px     
 import plotly.graph_objects as go  
@@ -45,48 +47,77 @@ df['is_segredo_justica'] = tmp.map({
     '1': True, '0': False,
     'sim': True, 'não': False, 'nao': False
 })
-
 df['is_segredo_justica'] = df['is_segredo_justica'].fillna(False).astype(bool)
 
-# Limpeza da serventia
+# Limpeza da serventia e comarca
 df['serventia'] = df['serventia'].astype(str).str.strip()
+df['comarca'] = df['comarca'].astype(str).str.strip()
+
+df = df.reset_index(drop=True)
 
 # DataFrame Serventia
 df_serventia = (
-    df.loc[df['serventia'].ne(''), ['serventia', 'processo', 'ano_distribuicao', 'is_segredo_justica']]
+    df.loc[df['serventia'].ne(''), 
+           ['comarca', 'serventia', 'processo', 'ano_distribuicao', 'is_segredo_justica']]
       .dropna(subset=['ano_distribuicao'])
       .copy()
 )
 # Agrupar contando os processos únicos
-contagem = df.groupby(['ano_distribuicao', 'serventia','is_segredo_justica'])['processo'].nunique().reset_index()
-df['serventia'] = df['serventia'].astype(str).str.strip()
+contagem = df.groupby(['ano_distribuicao','comarca', 'serventia','is_segredo_justica'])['processo'].nunique().reset_index()
 
 # Processar dados por ano
 def processar_dados(df_base, ano: int) -> pd.DataFrame:
-    df_ano = df_base[df_base['ano_distribuicao'] == ano]
+    # Filtra e garante colunas necessárias
+    cols_need = ['comarca','serventia','processo','is_segredo_justica','ano_distribuicao']
+    missing = [c for c in cols_need if c not in df_base.columns]
+    if missing:
+        raise KeyError(f"Colunas ausentes em df_base: {missing}")
 
-    sigilosos = (df_ano[df_ano['is_segredo_justica']]
-                 .groupby('serventia')['processo'].nunique())
-    nao_sigilosos = (df_ano[~df_ano['is_segredo_justica']]
-                     .groupby('serventia')['processo'].nunique())
+    df_ano = df_base.loc[df_base['ano_distribuicao'] == ano,
+                         ['comarca','serventia','processo','is_segredo_justica']].copy()
 
-    total = pd.DataFrame({
-        f'sigilosos_{ano}': sigilosos,
-        f'nao_sigilosos_{ano}': nao_sigilosos
-    }).fillna(0)
+    if df_ano.empty:
+        # retorna DF vazio com índice multi para não quebrar concat
+        idx = pd.MultiIndex.from_arrays([[],[]], names=['comarca','serventia'])
+        out = pd.DataFrame(index=idx)
+        out[f'sigilosos_{ano}'] = []
+        out[f'nao_sigilosos_{ano}'] = []
+        out[f'total_{ano}'] = []
+        out[f'proporcao_sigilosos_{ano}'] = []
+        out[f'proporcao_nao_sigilosos_{ano}'] = []
+        return out
 
-    total[f'total_{ano}'] = total[f'sigilosos_{ano}'] + total[f'nao_sigilosos_{ano}']
+    # Normaliza valores
+    df_ano[['comarca','serventia']] = df_ano[['comarca','serventia']].apply(lambda s: s.astype(str).str.strip())
 
-    denom = total[f'total_{ano}']
-    total[f'proporcao_sigilosos_{ano}'] = np.where(
-        denom > 0, (total[f'sigilosos_{ano}'] / denom) * 100, 0.0
-    ).round(4)
+    # Define tipo (sigiloso / nao_sigiloso) e evita dupla contagem do mesmo processo/tipo
+    df_ano['tipo'] = np.where(df_ano['is_segredo_justica'], 'sigilosos', 'nao_sigilosos')
+    df_ano = df_ano.drop_duplicates(subset=['comarca','serventia','processo','tipo'])
 
-    total[f'proporcao_nao_sigilosos_{ano}'] = np.where(
-        denom > 0, (total[f'nao_sigilosos_{ano}'] / denom) * 100, 0.0
-    ).round(4)
+    # Conta processos únicos por (comarca, serventia, tipo)
+    grp = (df_ano
+           .groupby(['comarca','serventia','tipo'], as_index=False)['processo']
+           .nunique())
 
-    return total
+    # Pivot para colunas 'sigilosos' e 'nao_sigilosos'
+    pv = grp.pivot_table(index=['comarca','serventia'],
+                         columns='tipo',
+                         values='processo',
+                         aggfunc='sum',
+                         fill_value=0)
+
+    # Monta saída com sufixos do ano
+    out = pd.DataFrame(index=pv.index)
+    out[f'sigilosos_{ano}'] = pv['sigilosos'] if 'sigilosos' in pv.columns else pd.Series(0, index=pv.index)
+    out[f'nao_sigilosos_{ano}'] = pv['nao_sigilosos'] if 'nao_sigilosos' in pv.columns else pd.Series(0, index=pv.index)
+    out[f'total_{ano}'] = out[f'sigilosos_{ano}'] + out[f'nao_sigilosos_{ano}']
+
+    denom = out[f'total_{ano}'].replace(0, np.nan)
+    out[f'proporcao_sigilosos_{ano}'] = ((out[f'sigilosos_{ano}'] / denom) * 100).fillna(0.0).round(4)
+    out[f'proporcao_nao_sigilosos_{ano}'] = ((out[f'nao_sigilosos_{ano}'] / denom) * 100).fillna(0.0).round(4)
+
+    return out 
+
 # Processar dados para cada ano
 dados_2022 = processar_dados(df_serventia, 2022)
 dados_2023 = processar_dados(df_serventia, 2023)
@@ -95,17 +126,18 @@ dados_2024 = processar_dados(df_serventia, 2024)
 # Concatenar os dados
 tabela_final = pd.concat([dados_2022, dados_2023, dados_2024], axis=1).fillna(0)
 tabela_final = tabela_final.reset_index()
-# Formatar valores para exibição
+
+# Formatar valores inteiros para exibição
 for ano in [2022, 2023, 2024]:
     for col in [f'sigilosos_{ano}', f'nao_sigilosos_{ano}', f'total_{ano}']:
         tabela_final[col] = tabela_final[col].astype(int)
 
 # --- TABELA DE PROPORÇÕES COM VARIAÇÃO TOTAL E MÉDIA ---
-tabela_proporcoes = tabela_final[['serventia'] + 
-                        [f'sigilosos_{ano}' for ano in [2022, 2023, 2024]].copy() +
-                        [f'nao_sigilosos_{ano}' for ano in [2022, 2023, 2024]].copy() +
-                        [f'total_{ano}' for ano in [2022, 2023, 2024]].copy() +
-                        [f'proporcao_sigilosos_{ano}' for ano in [2022, 2023, 2024]].copy() +
+tabela_proporcoes = tabela_final[['comarca', 'serventia'] + 
+                        [f'sigilosos_{ano}' for ano in [2022, 2023, 2024]] +
+                        [f'nao_sigilosos_{ano}' for ano in [2022, 2023, 2024]] +
+                        [f'total_{ano}' for ano in [2022, 2023, 2024]] +
+                        [f'proporcao_sigilosos_{ano}' for ano in [2022, 2023, 2024]] +
                         [f'proporcao_nao_sigilosos_{ano}' for ano in [2022, 2023, 2024]]].copy()
                 
 # Converter proporções para float (remover % temporariamente)
@@ -197,6 +229,7 @@ fig_proporcoes = go.Figure(data=[go.Table(
     header=dict(
         values=[
             'Serventia',
+            'Comarca',
             'Sigilosos 2022',
             'Sigilosos 2023',
             'Sigilosos 2024',
@@ -225,6 +258,7 @@ fig_proporcoes = go.Figure(data=[go.Table(
     cells=dict(
         values=[
             tabela_proporcoes_formatada['serventia'],
+            tabela_proporcoes_formatada['comarca'],
             tabela_proporcoes_formatada['sigilosos_2022'],
             tabela_proporcoes_formatada['sigilosos_2023'],
             tabela_proporcoes_formatada['sigilosos_2024'],
@@ -266,22 +300,24 @@ fig_proporcoes.update_layout(
 
 # 1. Gráfico de Dispersão
 # Dataframe para o gráfico de disperção
-tabela_dispersao = pd.merge(
-    tabela_proporcoes,
-    tabela_final[['serventia', 'sigilosos_2022', 'sigilosos_2023', 'sigilosos_2024',
-                    'nao_sigilosos_2022', 'nao_sigilosos_2023', 'nao_sigilosos_2024']],
-    on='serventia',
-    how='left'
+tabela_dispersao = tabela_proporcoes.copy()
+
+# Rótulo único por ponto (comarca - serventia)
+tabela_dispersao['rotulo'] = (
+    tabela_dispersao['serventia'].astype(str).str.strip() 
+    + " - " 
+    + tabela_dispersao['comarca'].astype(str).str.strip()
 )
+
 # Criar gráfico
 colunas_hover = [
     'variacao_total_sigilosos',  # -> customdata[0]
-    'sigilosos_2022_x',          # -> customdata[1]
-    'sigilosos_2023_x',          # -> customdata[2]
-    'sigilosos_2024_x',          # -> customdata[3]
-    'nao_sigilosos_2022_x',      # -> customdata[4]
-    'nao_sigilosos_2023_x',      # -> customdata[5]
-    'nao_sigilosos_2024_x'       # -> customdata[6]
+    'sigilosos_2022',          # -> customdata[1]
+    'sigilosos_2023',          # -> customdata[2]
+    'sigilosos_2024',          # -> customdata[3]
+    'nao_sigilosos_2022',      # -> customdata[4]
+    'nao_sigilosos_2023',      # -> customdata[5]
+    'nao_sigilosos_2024'       # -> customdata[6]
 ]
 fig_dispersao = px.scatter(
     tabela_dispersao,
@@ -292,11 +328,11 @@ fig_dispersao = px.scatter(
         'proporcao_media_sigilosos': 'Proporção Média de Casos Sigilosos (%)',
         'variacao_total_sigilosos': 'Variação da Proporção de Casos Sigilosos (2024 - 2022)'
     },
-    hover_name='serventia',
+    hover_name='rotulo',
     custom_data=colunas_hover
 )
 
-# 3. Adicionar as linhas de referência para os quadrantes de casos sigilosos
+# 3. Linhas de referência para os quadrantes de casos sigilosos
 media_proporcao_sigilosos = tabela_proporcoes['proporcao_media_sigilosos'].mean()
 fig_dispersao.add_hline(y=0, line_dash="dash", line_color="grey")
 fig_dispersao.add_vline(x=media_proporcao_sigilosos, line_dash="dash", line_color="grey")
@@ -310,14 +346,15 @@ fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total_sigilosos
 # --- ATUALIZAÇÕES GERAIS DE LAYOUT ---
 
 # 8. Atualizar os títulos dos eixos e o título principal
-fig_dispersao.update_xaxes(title_text="Proporção Média de Casos Sigilosos (%)")
-fig_dispersao.update_yaxes(title_text="Variação da Proporção (2024 - 2022)")
+fig_dispersao.update_xaxes(title_text="Proporção Média de Casos Sigilosos (%)", ticksuffix="%")
+fig_dispersao.update_yaxes(title_text="Variação da Proporção (2024 - 2022)", ticksuffix="%")
+
 
 fig_dispersao.update_traces(
     marker=dict(size=10, color='#203864'),
     hovertemplate="<br>".join([
-        "<b>Serventia:</b> %{hovertext}",
-        "<b>Variação Total:</b> %{customdata[0]:.2f}%",
+        "<b>%{hovertext}</b>",
+        "<b>Variação Total de Sigilosos:</b> %{customdata[0]:.2f}%",
         "<b>--- <b>Contagem de Casos</b> ---",
         "<b>Sigilosos 2022:</b> %{customdata[1]}",
         "<b>Sigilosos 2023:</b> %{customdata[2]}",
@@ -335,8 +372,6 @@ fig_dispersao.update_layout(
     height=900,
     showlegend=False # A legenda não é necessária, pois os títulos dos subplots explicam
 )
-fig_dispersao.update_xaxes(ticksuffix="%")
-fig_dispersao.update_yaxes(ticksuffix="%")
 
 # Exibição dos resultados
 fig_proporcoes.show()
