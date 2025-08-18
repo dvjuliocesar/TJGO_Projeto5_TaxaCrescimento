@@ -58,7 +58,7 @@ df = df.reset_index(drop=True)
 
 # DataFrame Área de Ação
 df_area_acao = (
-    df.loc[df['serventia'].ne(''), 
+    df.loc[df['nome_area_acao'].ne(''), 
            ['comarca', 'nome_area_acao', 'processo', 'ano_distribuicao', 'is_segredo_justica']]
       .dropna(subset=['ano_distribuicao'])
       .copy()
