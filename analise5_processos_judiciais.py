@@ -1,4 +1,4 @@
-'''Análise de Processos Judiciais Sigilosos - Área de Ação agrupadas por Comarcas:
+'''Análise de Processos Judiciais Sigilosos - Área de Ação Geral:
 - Este script analisa dados de processos judiciais, focando no número de processos e
 na proporção de processos sigilosos por Área de Ação. Ele gera tabelas e gráficos para visualização dos dados.'''
 
