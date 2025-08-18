@@ -370,7 +370,7 @@ fig_dispersao.update_layout(
     title_text='<b>Análise Estratégica Comparativa: Foco em Casos Sigilosos VS Não Sigilosos</b>',
     title_x=0.5,
     height=900,
-    showlegend=False # A legenda não é necessária, pois os títulos dos subplots explicam
+    showlegend=False 
 )
 
 # Exibição dos resultados
