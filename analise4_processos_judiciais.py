@@ -36,7 +36,7 @@ for arquivo in arquivos_csv:
 
 df = pd.concat(dfs, ignore_index=True)
 
-# 2) Tratamento dos Dados para Serventias (Processos Sigilosos)
+# 2) Tratamento dos Dados para Área de Ação (Processos Sigilosos)
 df['data_distribuicao'] = pd.to_datetime(df['data_distribuicao'], errors='coerce')
 df['ano_distribuicao'] = df['data_distribuicao'].dt.year
 
@@ -49,32 +49,32 @@ df['is_segredo_justica'] = tmp.map({
 })
 df['is_segredo_justica'] = df['is_segredo_justica'].fillna(False).astype(bool)
 
-# Limpeza da serventia e comarca
-df['serventia'] = df['serventia'].astype(str).str.strip()
+# Limpeza da área de ação e comarca
+df['nome_area_acao'] = df['nome_area_acao'].astype(str).str.strip()
 df['comarca'] = df['comarca'].astype(str).str.strip()
 
 df = df.reset_index(drop=True)
 
-# DataFrame Serventia
-df_serventia = (
+# DataFrame Área de Ação
+df_area_acao = (
     df.loc[df['serventia'].ne(''), 
-           ['comarca', 'serventia', 'processo', 'ano_distribuicao', 'is_segredo_justica']]
+           ['comarca', 'nome_area_acao', 'processo', 'ano_distribuicao', 'is_segredo_justica']]
       .dropna(subset=['ano_distribuicao'])
       .copy()
 )
 # Agrupar contando os processos únicos
-contagem = df.groupby(['ano_distribuicao','comarca', 'serventia','is_segredo_justica'])['processo'].nunique().reset_index()
+contagem = df.groupby(['ano_distribuicao','comarca', 'nome_area_acao','is_segredo_justica'])['processo'].nunique().reset_index()
 
 # Processar dados por ano
 def processar_dados(df_base, ano: int) -> pd.DataFrame:
     # Filtra e garante colunas necessárias
-    cols_need = ['comarca','serventia','processo','is_segredo_justica','ano_distribuicao']
+    cols_need = ['comarca','nome_area_acao','processo','is_segredo_justica','ano_distribuicao']
     missing = [c for c in cols_need if c not in df_base.columns]
     if missing:
         raise KeyError(f"Colunas ausentes em df_base: {missing}")
 
     df_ano = df_base.loc[df_base['ano_distribuicao'] == ano,
-                         ['comarca','serventia','processo','is_segredo_justica']].copy()
+                         ['comarca','nome_area_acao','processo','is_segredo_justica']].copy()
 
     if df_ano.empty:
         # retorna DF vazio com índice multi para não quebrar concat
@@ -88,19 +88,19 @@ def processar_dados(df_base, ano: int) -> pd.DataFrame:
         return out
 
     # Normaliza valores
-    df_ano[['comarca','serventia']] = df_ano[['comarca','serventia']].apply(lambda s: s.astype(str).str.strip())
+    df_ano[['comarca','nome_area_acao']] = df_ano[['comarca','nome_area_acao']].apply(lambda s: s.astype(str).str.strip())
 
     # Define tipo (sigiloso / nao_sigiloso) e evita dupla contagem do mesmo processo/tipo
     df_ano['tipo'] = np.where(df_ano['is_segredo_justica'], 'sigilosos', 'nao_sigilosos')
-    df_ano = df_ano.drop_duplicates(subset=['comarca','serventia','processo','tipo'])
+    df_ano = df_ano.drop_duplicates(subset=['comarca','nome_area_acao','processo','tipo'])
 
     # Conta processos únicos por (comarca, serventia, tipo)
     grp = (df_ano
-           .groupby(['comarca','serventia','tipo'], as_index=False)['processo']
+           .groupby(['comarca','nome_area_acao','tipo'], as_index=False)['processo']
            .nunique())
 
     # Pivot para colunas 'sigilosos' e 'nao_sigilosos'
-    pv = grp.pivot_table(index=['comarca','serventia'],
+    pv = grp.pivot_table(index=['comarca','nome_area_acao'],
                          columns='tipo',
                          values='processo',
                          aggfunc='sum',
@@ -119,9 +119,9 @@ def processar_dados(df_base, ano: int) -> pd.DataFrame:
     return out 
 
 # Processar dados para cada ano
-dados_2022 = processar_dados(df_serventia, 2022)
-dados_2023 = processar_dados(df_serventia, 2023)
-dados_2024 = processar_dados(df_serventia, 2024)
+dados_2022 = processar_dados(df_area_acao, 2022)
+dados_2023 = processar_dados(df_area_acao, 2023)
+dados_2024 = processar_dados(df_area_acao, 2024)
 
 # Concatenar os dados
 tabela_final = pd.concat([dados_2022, dados_2023, dados_2024], axis=1).fillna(0)
@@ -133,7 +133,7 @@ for ano in [2022, 2023, 2024]:
         tabela_final[col] = tabela_final[col].astype(int)
 
 # --- TABELA DE PROPORÇÕES COM VARIAÇÃO TOTAL E MÉDIA ---
-tabela_proporcoes = tabela_final[['comarca', 'serventia'] + 
+tabela_proporcoes = tabela_final[['comarca', 'nome_area_acao'] + 
                         [f'sigilosos_{ano}' for ano in [2022, 2023, 2024]] +
                         [f'nao_sigilosos_{ano}' for ano in [2022, 2023, 2024]] +
                         [f'total_{ano}' for ano in [2022, 2023, 2024]] +
@@ -228,7 +228,7 @@ fill_color = [row_colors] * num_cols
 fig_proporcoes = go.Figure(data=[go.Table(
     header=dict(
         values=[
-            'Serventia',
+            'Área de Ação',
             'Comarca',
             'Sigilosos 2022',
             'Sigilosos 2023',
@@ -257,7 +257,7 @@ fig_proporcoes = go.Figure(data=[go.Table(
     ),
     cells=dict(
         values=[
-            tabela_proporcoes_formatada['serventia'],
+            tabela_proporcoes_formatada['nome_area_acao'],
             tabela_proporcoes_formatada['comarca'],
             tabela_proporcoes_formatada['sigilosos_2022'],
             tabela_proporcoes_formatada['sigilosos_2023'],
@@ -287,7 +287,7 @@ fig_proporcoes = go.Figure(data=[go.Table(
 )])
 
 fig_proporcoes.update_layout(
-    title='<b>Proporção de Casos Sigilosos por Serventia (2022-2024)</b><br>'
+    title='<b>Proporção de Casos Sigilosos por Área de Ação (2022-2024)</b><br>'
             '<i>Ordenado por Variação Total</i>',
     title_x=0.5,
     margin=dict(l=20, r=20, t=100, b=20),
@@ -302,9 +302,9 @@ fig_proporcoes.update_layout(
 # Dataframe para o gráfico de disperção
 tabela_dispersao = tabela_proporcoes.copy()
 
-# Rótulo único por ponto (comarca - serventia)
+# Rótulo único por ponto (comarca - área de ação)
 tabela_dispersao['rotulo'] = (
-    tabela_dispersao['serventia'].astype(str).str.strip() 
+    tabela_dispersao['nome_area_acao'].astype(str).str.strip() 
     + " - " 
     + tabela_dispersao['comarca'].astype(str).str.strip()
 )
