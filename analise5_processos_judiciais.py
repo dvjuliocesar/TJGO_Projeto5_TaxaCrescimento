@@ -51,30 +51,29 @@ df['is_segredo_justica'] = df['is_segredo_justica'].fillna(False).astype(bool)
 
 # Limpeza da área de ação e comarca
 df['nome_area_acao'] = df['nome_area_acao'].astype(str).str.strip()
-df['comarca'] = df['comarca'].astype(str).str.strip()
 
 df = df.reset_index(drop=True)
 
 # DataFrame Área de Ação
 df_area_acao = (
-    df.loc[df['serventia'].ne(''), 
-           ['comarca', 'nome_area_acao', 'processo', 'ano_distribuicao', 'is_segredo_justica']]
+    df.loc[df['nome_area_acao'].ne(''), 
+           ['nome_area_acao', 'processo', 'ano_distribuicao', 'is_segredo_justica']]
       .dropna(subset=['ano_distribuicao'])
       .copy()
 )
 # Agrupar contando os processos únicos
-contagem = df.groupby(['ano_distribuicao','comarca', 'nome_area_acao','is_segredo_justica'])['processo'].nunique().reset_index()
+contagem = df.groupby(['ano_distribuicao', 'nome_area_acao','is_segredo_justica'])['processo'].nunique().reset_index()
 
 # Processar dados por ano
 def processar_dados(df_base, ano: int) -> pd.DataFrame:
     # Filtra e garante colunas necessárias
-    cols_need = ['comarca','nome_area_acao','processo','is_segredo_justica','ano_distribuicao']
+    cols_need = ['nome_area_acao','processo','is_segredo_justica','ano_distribuicao']
     missing = [c for c in cols_need if c not in df_base.columns]
     if missing:
         raise KeyError(f"Colunas ausentes em df_base: {missing}")
 
     df_ano = df_base.loc[df_base['ano_distribuicao'] == ano,
-                         ['comarca','nome_area_acao','processo','is_segredo_justica']].copy()
+                         ['nome_area_acao','processo','is_segredo_justica']].copy()
 
     if df_ano.empty:
         # retorna DF vazio com índice multi para não quebrar concat
