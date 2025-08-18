@@ -79,7 +79,7 @@ def processar_dados(df_base, ano: int) -> pd.DataFrame:
 
     if df_ano.empty:
         # retorna DF vazio com índice multi para não quebrar concat
-        idx = pd.MultiIndex.from_arrays([[],[]], names=['comarca','serventia'])
+        idx = pd.MultiIndex.from_arrays([[],[]], names=['comarca','nome_area_acao'])
         out = pd.DataFrame(index=idx)
         out[f'sigilosos_{ano}'] = []
         out[f'nao_sigilosos_{ano}'] = []
