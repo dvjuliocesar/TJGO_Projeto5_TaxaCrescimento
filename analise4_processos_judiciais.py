@@ -367,6 +367,20 @@ fig_dispersao.update_traces(
     ])
 )
 
+fig_dispersao.add_hline(
+    y=0, line_dash="dash", line_color="grey",
+    annotation_text="Variação = 0", annotation_position="right"
+)
+
+fig_dispersao.add_vline(
+    x=media_proporcao_sigilosos,
+    line_dash="dash",
+    line_color="grey",
+    # rótulo com o valor da média
+    annotation_text=f"Média: {media_proporcao_sigilosos:.2f}%".replace('.', ','),
+    annotation_position="top"
+)
+
 fig_dispersao.update_layout(
     title_text='<b>Análise Estratégica Comparativa: Foco em Casos Sigilosos VS Não Sigilosos</b>',
     title_x=0.5,
