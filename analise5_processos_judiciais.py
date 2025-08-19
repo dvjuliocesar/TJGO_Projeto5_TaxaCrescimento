@@ -2,17 +2,11 @@
 - Este script analisa dados de processos judiciais, focando no número de processos e
 na proporção de processos sigilosos por Área de Ação. Ele gera tabelas e gráficos para visualização dos dados.'''
 
-
 # --- BIBLIOTECAS NECESSÁRIAS ---
-# Manipulação de dados e cálculos numéricos
 import pandas as pd 
 import numpy as np  
-# Visualização estática (gráficos tradicionais)
-# Manipulação de datas
-# Visualização interativa e dinâmica
 import plotly.express as px     
 import plotly.graph_objects as go  
-# Manipulação de arquivos e sistemas
 import glob, os, re
 
 arquivos_csv = glob.glob(os.path.join('uploads', 'processo_*.csv'))
@@ -49,35 +43,37 @@ df['is_segredo_justica'] = tmp.map({
 })
 df['is_segredo_justica'] = df['is_segredo_justica'].fillna(False).astype(bool)
 
-# Limpeza da área de ação e comarca
+# Limpeza da área de ação
 df['nome_area_acao'] = df['nome_area_acao'].astype(str).str.strip()
-
 df = df.reset_index(drop=True)
 
-# DataFrame Área de Ação
+# DataFrame Área de Ação (sem comarca)
 df_area_acao = (
-    df.loc[df['nome_area_acao'].ne(''), 
+    df.loc[df['nome_area_acao'].ne(''),
            ['nome_area_acao', 'processo', 'ano_distribuicao', 'is_segredo_justica']]
       .dropna(subset=['ano_distribuicao'])
       .copy()
 )
-# Agrupar contando os processos únicos
-contagem = df.groupby(['ano_distribuicao', 'nome_area_acao','is_segredo_justica'])['processo'].nunique().reset_index()
 
-# Processar dados por ano
+# (Opcional, mantido por estrutura) Contagem única por ano/área/tipo
+contagem = (
+    df.groupby(['ano_distribuicao', 'nome_area_acao', 'is_segredo_justica'])['processo']
+      .nunique()
+      .reset_index()
+)
+
+# Processar dados por ano (sem comarca)
 def processar_dados(df_base, ano: int) -> pd.DataFrame:
-    # Filtra e garante colunas necessárias
-    cols_need = ['nome_area_acao','processo','is_segredo_justica','ano_distribuicao']
+    cols_need = ['nome_area_acao', 'processo', 'is_segredo_justica', 'ano_distribuicao']
     missing = [c for c in cols_need if c not in df_base.columns]
     if missing:
         raise KeyError(f"Colunas ausentes em df_base: {missing}")
 
     df_ano = df_base.loc[df_base['ano_distribuicao'] == ano,
-                         ['nome_area_acao','processo','is_segredo_justica']].copy()
+                         ['nome_area_acao', 'processo', 'is_segredo_justica']].copy()
 
     if df_ano.empty:
-        # retorna DF vazio com índice multi para não quebrar concat
-        idx = pd.MultiIndex.from_arrays([[],[]], names=['comarca','serventia'])
+        idx = pd.Index([], name='nome_area_acao')
         out = pd.DataFrame(index=idx)
         out[f'sigilosos_{ano}'] = []
         out[f'nao_sigilosos_{ano}'] = []
@@ -86,26 +82,22 @@ def processar_dados(df_base, ano: int) -> pd.DataFrame:
         out[f'proporcao_nao_sigilosos_{ano}'] = []
         return out
 
-    # Normaliza valores
-    df_ano[['comarca','nome_area_acao']] = df_ano[['comarca','nome_area_acao']].apply(lambda s: s.astype(str).str.strip())
+    df_ano['nome_area_acao'] = df_ano['nome_area_acao'].astype(str).str.strip()
 
-    # Define tipo (sigiloso / nao_sigiloso) e evita dupla contagem do mesmo processo/tipo
     df_ano['tipo'] = np.where(df_ano['is_segredo_justica'], 'sigilosos', 'nao_sigilosos')
-    df_ano = df_ano.drop_duplicates(subset=['comarca','nome_area_acao','processo','tipo'])
+    df_ano = df_ano.drop_duplicates(subset=['nome_area_acao', 'processo', 'tipo'])
 
-    # Conta processos únicos por (comarca, serventia, tipo)
-    grp = (df_ano
-           .groupby(['comarca','nome_area_acao','tipo'], as_index=False)['processo']
-           .nunique())
+    grp = (
+        df_ano.groupby(['nome_area_acao', 'tipo'], as_index=False)['processo']
+              .nunique()
+    )
 
-    # Pivot para colunas 'sigilosos' e 'nao_sigilosos'
-    pv = grp.pivot_table(index=['comarca','nome_area_acao'],
+    pv = grp.pivot_table(index=['nome_area_acao'],
                          columns='tipo',
                          values='processo',
                          aggfunc='sum',
                          fill_value=0)
 
-    # Monta saída com sufixos do ano
     out = pd.DataFrame(index=pv.index)
     out[f'sigilosos_{ano}'] = pv['sigilosos'] if 'sigilosos' in pv.columns else pd.Series(0, index=pv.index)
     out[f'nao_sigilosos_{ano}'] = pv['nao_sigilosos'] if 'nao_sigilosos' in pv.columns else pd.Series(0, index=pv.index)
@@ -124,7 +116,7 @@ dados_2024 = processar_dados(df_area_acao, 2024)
 
 # Concatenar os dados
 tabela_final = pd.concat([dados_2022, dados_2023, dados_2024], axis=1).fillna(0)
-tabela_final = tabela_final.reset_index()
+tabela_final = tabela_final.reset_index()  # terá apenas 'nome_area_acao'
 
 # Formatar valores inteiros para exibição
 for ano in [2022, 2023, 2024]:
@@ -132,61 +124,55 @@ for ano in [2022, 2023, 2024]:
         tabela_final[col] = tabela_final[col].astype(int)
 
 # --- TABELA DE PROPORÇÕES COM VARIAÇÃO TOTAL E MÉDIA ---
-tabela_proporcoes = tabela_final[['comarca', 'nome_area_acao'] + 
+tabela_proporcoes = tabela_final[['nome_area_acao'] + 
                         [f'sigilosos_{ano}' for ano in [2022, 2023, 2024]] +
                         [f'nao_sigilosos_{ano}' for ano in [2022, 2023, 2024]] +
                         [f'total_{ano}' for ano in [2022, 2023, 2024]] +
                         [f'proporcao_sigilosos_{ano}' for ano in [2022, 2023, 2024]] +
                         [f'proporcao_nao_sigilosos_{ano}' for ano in [2022, 2023, 2024]]].copy()
                 
-# Converter proporções para float (remover % temporariamente)
+# Converter proporções para float
 for ano in [2022, 2023, 2024]:
     tabela_proporcoes[f'proporcao_sigilosos_{ano}'] = tabela_proporcoes[f'proporcao_sigilosos_{ano}'].astype(float)
     tabela_proporcoes[f'proporcao_nao_sigilosos_{ano}'] = tabela_proporcoes[f'proporcao_nao_sigilosos_{ano}'].astype(float)
 
-# Calcular Variação de Sigilosos Total (2022 → 2024)
+# Variações e médias
 tabela_proporcoes['variacao_total_sigilosos'] = (
     (tabela_proporcoes['proporcao_sigilosos_2023'] - tabela_proporcoes['proporcao_sigilosos_2022']) +
     (tabela_proporcoes['proporcao_sigilosos_2024'] - tabela_proporcoes['proporcao_sigilosos_2023'])
 )
 
-# Calcular Variação de Não Sigilosos Total (2022 → 2024)
 tabela_proporcoes['variacao_total_nao_sigilosos'] = (
     (tabela_proporcoes['proporcao_nao_sigilosos_2023'] - tabela_proporcoes['proporcao_nao_sigilosos_2022']) +
     (tabela_proporcoes['proporcao_nao_sigilosos_2024'] - tabela_proporcoes['proporcao_nao_sigilosos_2023'])
 )
 
-# Calcular Proporção Média de Sigilosos (2022-2024)
 tabela_proporcoes['proporcao_media_sigilosos'] = tabela_proporcoes[
     ['proporcao_sigilosos_2022', 'proporcao_sigilosos_2023', 'proporcao_sigilosos_2024']
 ].mean(axis=1)
 
-# Calcular a proporção Média de Não Sigilosos (2022-2024)
 tabela_proporcoes['proporcao_media_nao_sigilosos'] = tabela_proporcoes[
     ['proporcao_nao_sigilosos_2022', 'proporcao_nao_sigilosos_2023', 'proporcao_nao_sigilosos_2024']
 ].mean(axis=1)
     
-# Calcular total de Sigilosos
 tabela_proporcoes['total_sigilosos'] = (
     tabela_proporcoes['sigilosos_2022'] +
     tabela_proporcoes['sigilosos_2023'] +
     tabela_proporcoes['sigilosos_2024']
 )
 
-# Calcular total de Não Sigilosos
 tabela_proporcoes['total_nao_sigilosos'] = (
     tabela_proporcoes['nao_sigilosos_2022'] +
     tabela_proporcoes['nao_sigilosos_2023'] +
     tabela_proporcoes['nao_sigilosos_2024']
 )
     
-# Calcular total geral de processos
 tabela_proporcoes['total_processos'] = (
     tabela_proporcoes['total_sigilosos'] +
     tabela_proporcoes['total_nao_sigilosos']
 )
 
-# Formatar para exibição (padrão brasileiro)
+# Formatação BR
 tabela_proporcoes_formatada = tabela_proporcoes.fillna(0).copy()
 for ano in [2022, 2023, 2024]:
     tabela_proporcoes_formatada[f'proporcao_sigilosos_{ano}'] = tabela_proporcoes_formatada[
@@ -219,65 +205,68 @@ def get_row_colors(n):
     return ['lavender' if i % 2 == 0 else 'white' for i in range(n)]
 
 num_rows = len(tabela_proporcoes_formatada)
-num_cols = 20  # ajuste se mudar as colunas
+
+header_values = [
+    'Área de Ação',
+    'Sigilosos 2022',
+    'Sigilosos 2023',
+    'Sigilosos 2024',
+    'Total Sigilosos',
+    'Proporção de Sigilosos 2022', 
+    'Proporção de Sigilosos 2023', 
+    'Proporção de Sigilosos 2024', 
+    'Variação Total de Sigilosos', 
+    'Proporção Média de Sigilosos',
+    'Não Sigilosos 2022',
+    'Não Sigilosos 2023',
+    'Não Sigilosos 2024',
+    'Total Não Sigilosos',
+    'Proporção de Não Sigilosos 2022',
+    'Proporção de Não Sigilosos 2023',
+    'Proporção de Não Sigilosos 2024',
+    'Variação Total de Não Sigilosos',
+    'Proporção Média de Não Sigilosos',
+    'Total de Processos'
+]
+num_cols = len(header_values)
+
 row_colors = get_row_colors(num_rows)
 fill_color = [row_colors] * num_cols 
 
-# Tabela Plotly das Proporções com Variação e Média
+cells_values = [
+    tabela_proporcoes_formatada['nome_area_acao'],
+    tabela_proporcoes_formatada['sigilosos_2022'],
+    tabela_proporcoes_formatada['sigilosos_2023'],
+    tabela_proporcoes_formatada['sigilosos_2024'],
+    tabela_proporcoes_formatada['total_sigilosos'],
+    tabela_proporcoes_formatada['proporcao_sigilosos_2022'],
+    tabela_proporcoes_formatada['proporcao_sigilosos_2023'],
+    tabela_proporcoes_formatada['proporcao_sigilosos_2024'],
+    tabela_proporcoes_formatada['variacao_total_sigilosos'],
+    tabela_proporcoes_formatada['proporcao_media_sigilosos'],
+    tabela_proporcoes_formatada['nao_sigilosos_2022'],
+    tabela_proporcoes_formatada['nao_sigilosos_2023'],
+    tabela_proporcoes_formatada['nao_sigilosos_2024'],
+    tabela_proporcoes_formatada['total_nao_sigilosos'],
+    tabela_proporcoes_formatada['proporcao_nao_sigilosos_2022'],
+    tabela_proporcoes_formatada['proporcao_nao_sigilosos_2023'],
+    tabela_proporcoes_formatada['proporcao_nao_sigilosos_2024'],
+    tabela_proporcoes_formatada['variacao_total_nao_sigilosos'],
+    tabela_proporcoes_formatada['proporcao_media_nao_sigilosos'],
+    tabela_proporcoes_formatada['total_processos']
+]
+
+# Tabela Plotly das Proporções (sem coluna de Comarca)
 fig_proporcoes = go.Figure(data=[go.Table(
     header=dict(
-        values=[
-            'Área de Ação',
-            'Comarca',
-            'Sigilosos 2022',
-            'Sigilosos 2023',
-            'Sigilosos 2024',
-            'Total Sigilosos',
-            'Proporção de Sigilosos 2022', 
-            'Proporção de Sigilosos 2023', 
-            'Proporção de Sigilosos 2024', 
-            'Variação Total de Sigilosos', 
-            'Proporção Média de Sigilosos',
-            'Não Sigilosos 2022',
-            'Não Sigilosos 2023',
-            'Não Sigilosos 2024',
-            'Total Não Sigilosos',
-            'Proporção de Não Sigilosos 2022',
-            'Proporção de Não Sigilosos 2023',
-            'Proporção de Não Sigilosos 2024',
-            'Variação Total de Não Sigilosos',
-            'Proporção Média de Não Sigilosos',
-            'Total de Processos'  
-        ],
+        values=header_values,
         fill_color='#203864',
         font=dict(color='white', size=12),
         align='left',
         line_color='darkslategray'
     ),
     cells=dict(
-        values=[
-            tabela_proporcoes_formatada['nome_area_acao'],
-            tabela_proporcoes_formatada['comarca'],
-            tabela_proporcoes_formatada['sigilosos_2022'],
-            tabela_proporcoes_formatada['sigilosos_2023'],
-            tabela_proporcoes_formatada['sigilosos_2024'],
-            tabela_proporcoes_formatada['total_sigilosos'],
-            tabela_proporcoes_formatada['proporcao_sigilosos_2022'],
-            tabela_proporcoes_formatada['proporcao_sigilosos_2023'],
-            tabela_proporcoes_formatada['proporcao_sigilosos_2024'],
-            tabela_proporcoes_formatada['variacao_total_sigilosos'],
-            tabela_proporcoes_formatada['proporcao_media_sigilosos'],
-            tabela_proporcoes_formatada['nao_sigilosos_2022'],
-            tabela_proporcoes_formatada['nao_sigilosos_2023'],
-            tabela_proporcoes_formatada['nao_sigilosos_2024'],
-            tabela_proporcoes_formatada['total_nao_sigilosos'],
-            tabela_proporcoes_formatada['proporcao_nao_sigilosos_2022'],
-            tabela_proporcoes_formatada['proporcao_nao_sigilosos_2023'],
-            tabela_proporcoes_formatada['proporcao_nao_sigilosos_2024'],
-            tabela_proporcoes_formatada['variacao_total_nao_sigilosos'],
-            tabela_proporcoes_formatada['proporcao_media_nao_sigilosos'],
-            tabela_proporcoes_formatada['total_processos']
-        ],
+        values=cells_values,
         fill_color=fill_color,
         align='left',
         font=dict(color='black', size=11),
@@ -287,7 +276,7 @@ fig_proporcoes = go.Figure(data=[go.Table(
 
 fig_proporcoes.update_layout(
     title='<b>Proporção de Casos Sigilosos por Área de Ação (2022-2024)</b><br>'
-            '<i>Ordenado por Variação Total</i>',
+          '<i>Ordenado por Variação Total</i>',
     title_x=0.5,
     margin=dict(l=20, r=20, t=100, b=20),
     height=900,
@@ -297,27 +286,22 @@ fig_proporcoes.update_layout(
 
 # --- GRÁFICO DE DISPERSÃO ESTRATÉGICO (SIGILOSOS vs. NÃO SIGILOSOS) ---
 
-# 1. Gráfico de Dispersão
-# Dataframe para o gráfico de disperção
+# Dataframe para o gráfico de dispersão
 tabela_dispersao = tabela_proporcoes.copy()
 
-# Rótulo único por ponto (comarca - área de ação)
-tabela_dispersao['rotulo'] = (
-    tabela_dispersao['nome_area_acao'].astype(str).str.strip() 
-    + " - " 
-    + tabela_dispersao['comarca'].astype(str).str.strip()
-)
+# Rótulo único por ponto (somente área de ação)
+tabela_dispersao['rotulo'] = tabela_dispersao['nome_area_acao'].astype(str).str.strip()
 
-# Criar gráfico
 colunas_hover = [
-    'variacao_total_sigilosos',  # -> customdata[0]
-    'sigilosos_2022',          # -> customdata[1]
-    'sigilosos_2023',          # -> customdata[2]
-    'sigilosos_2024',          # -> customdata[3]
-    'nao_sigilosos_2022',      # -> customdata[4]
-    'nao_sigilosos_2023',      # -> customdata[5]
-    'nao_sigilosos_2024'       # -> customdata[6]
+    'variacao_total_sigilosos',
+    'sigilosos_2022',
+    'sigilosos_2023',
+    'sigilosos_2024',
+    'nao_sigilosos_2022',
+    'nao_sigilosos_2023',
+    'nao_sigilosos_2024'
 ]
+
 fig_dispersao = px.scatter(
     tabela_dispersao,
     x='proporcao_media_sigilosos',
@@ -331,23 +315,17 @@ fig_dispersao = px.scatter(
     custom_data=colunas_hover
 )
 
-# 3. Linhas de referência para os quadrantes de casos sigilosos
 media_proporcao_sigilosos = tabela_proporcoes['proporcao_media_sigilosos'].mean()
 fig_dispersao.add_hline(y=0, line_dash="dash", line_color="grey")
 fig_dispersao.add_vline(x=media_proporcao_sigilosos, line_dash="dash", line_color="grey")
 
-# 4. Adicionar anotações para explicar os quadrantes
 fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total_sigilosos'].max()*0.9, text="<b>Especialistas em Expansão</b>", showarrow=False, bgcolor="#e3f2fd", xanchor='right')
 fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total_sigilosos'].max()*0.9, text="<b>Novos Focos de Atuação</b>", showarrow=False, bgcolor="#e8f5e9", xanchor='left')
 fig_dispersao.add_annotation(x=5, y=tabela_proporcoes['variacao_total_sigilosos'].min()*0.9, text="<b>Fora do Foco</b>", showarrow=False, bgcolor="#ffebee", xanchor='left')
 fig_dispersao.add_annotation(x=95, y=tabela_proporcoes['variacao_total_sigilosos'].min()*0.9, text="<b>Especialistas em Transição</b>", showarrow=False, bgcolor="#fff3e0", xanchor='right')
 
-# --- ATUALIZAÇÕES GERAIS DE LAYOUT ---
-
-# 8. Atualizar os títulos dos eixos e o título principal
 fig_dispersao.update_xaxes(title_text="Proporção Média de Casos Sigilosos (%)", ticksuffix="%")
 fig_dispersao.update_yaxes(title_text="Variação da Proporção (2024 - 2022)", ticksuffix="%")
-
 
 fig_dispersao.update_traces(
     marker=dict(size=10, color='#203864'),
@@ -363,6 +341,20 @@ fig_dispersao.update_traces(
         "<b>Não Sigilosos 2024:</b> %{customdata[6]}",
         "<extra></extra>"
     ])
+)
+
+fig_dispersao.add_hline(
+    y=0, line_dash="dash", line_color="grey",
+    annotation_text="Variação = 0", annotation_position="right"
+)
+
+fig_dispersao.add_vline(
+    x=media_proporcao_sigilosos,
+    line_dash="dash",
+    line_color="grey",
+    # rótulo com o valor da média
+    annotation_text=f"Média: {media_proporcao_sigilosos:.2f}%".replace('.', ','),
+    annotation_position="top"
 )
 
 fig_dispersao.update_layout(
