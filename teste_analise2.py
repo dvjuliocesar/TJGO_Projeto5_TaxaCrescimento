@@ -1,3 +1,7 @@
+'''Análise de Processos Judiciais - Advogados e Sigilos:
+- Este script analisa dados de processos judiciais, focando na validação de números de OAB
+e na proporção de processos sigilosos por advogado. Ele gera tabelas e gráficos para visualização dos dados.'''
+
 # --- BIBLIOTECAS NECESSÁRIAS ---
 # Manipulação de dados e cálculos numéricos
 import pandas as pd 
@@ -274,39 +278,6 @@ if not df_validos.empty:
         paper_bgcolor='white',
         plot_bgcolor='white'
     )
-   
-    # --- GRÁFICO DE EVOLUÇÃO TEMPORAL POR ADVOGADO (TOP 10) --- 
-    # Preparar dados para o gráfico
-    top_advogados = tabela_proporcoes.nlargest(10, 'variacao_total_sigilosos')
-    dados_grafico = top_advogados.melt(id_vars=['oab'], 
-                                    value_vars=[
-                                        'proporcao_sigilosos_2022', 
-                                        'proporcao_sigilosos_2023', 
-                                        'proporcao_sigilosos_2024'],
-                                    var_name='ano',
-                                    value_name='proporcao')
-
-    # Converter anos para formato mais limpo
-    dados_grafico['ano'] = dados_grafico['ano'].str.extract('(\d+)').astype(int)
-
-    # Criar gráfico
-    fig_top_10 = px.line(dados_grafico, 
-                x='ano', 
-                y='proporcao', 
-                color='oab',
-                markers=True,
-                title='<b>Evolução da Proporção de Casos Sigilosos (Top 10 Advogados)</b>',
-                labels={'proporcao': 'Proporção de Casos Sigilosos (%)', 'ano': 'Ano'})
-
-    fig_top_10.update_layout(
-        hovermode='x unified',
-        yaxis=dict(tickformat=".2f%"),
-        xaxis=dict(tickmode='linear', dtick=1),
-        title_x=0.5,
-        margin=dict(l=20, r=20, t=100, b=20),
-        height=900,
-        legend_title_text='OAB'
-    )
 
     # --- GRÁFICO DE DISPERSÃO ESTRATÉGICO (SIGILOSOS vs. NÃO SIGILOSOS) ---
 
@@ -402,7 +373,7 @@ if not df_validos.empty:
     # Exibição dos resultados
     fig_proporcoes.show()
     fig_dispersao.show()
-    #fig_top_10.show()
+
 
 
     
