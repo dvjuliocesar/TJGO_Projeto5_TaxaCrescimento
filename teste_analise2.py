@@ -372,7 +372,7 @@ if not df_validos.empty:
 
     # Exibição dos resultados
     #fig_proporcoes.show()
-    #fig_dispersao.show()
+    fig_dispersao.show()
 
 # --- MÉTRICAS ---
 def _fmt_pct(x: float) -> str:
