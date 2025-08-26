@@ -371,8 +371,97 @@ if not df_validos.empty:
     fig_dispersao.update_yaxes(ticksuffix="%")
 
     # Exibição dos resultados
-    fig_proporcoes.show()
-    fig_dispersao.show()
+    #fig_proporcoes.show()
+    #fig_dispersao.show()
+
+# --- MÉTRICAS ---
+def _fmt_pct(x: float) -> str:
+    return f"{x:.2f}%".replace(".", ",")
+
+def _fmt_int(x: int) -> str:
+    # separador de milhar estilo pt-BR
+    return f"{x:,}".replace(",", ".")
+
+try:
+    # 1) total de registros de oab (considera preenchidos e não vazios)
+    mask_oab_preenchida = df["oab"].astype(str).str.strip().ne("") & df["oab"].notna()
+    total_registros_oab = int(mask_oab_preenchida.sum())
+
+    # 2) % de registros de oab válidas (sobre os preenchidos)
+    total_registros_validos = int(df.loc[mask_oab_preenchida, "oab_valida"].sum())
+    pct_validas = (total_registros_validos / total_registros_oab * 100) if total_registros_oab > 0 else 0.0
+
+    # 3) % de registros de oab inválidas (sobre os preenchidos)
+    total_invalidas = int(total_registros_oab - total_registros_validos)
+    pct_invalidas = (total_invalidas / total_registros_oab * 100) if total_registros_oab > 0 else 0.0
+
+    # 4) exemplos de formatos inválidos (máx. 10)
+    exemplos_invalidos = (
+        df.loc[mask_oab_preenchida & ~df["oab_valida"], "oab"]
+          .dropna().astype(str).str.strip().unique().tolist()[:10]
+    )
+
+    # 5) total de registros de oab válidas
+    # (já calculado em total_registros_validos)
+
+    # --- Métricas por OAB única (baseadas na tabela_proporcoes do script) ---
+    if "tabela_proporcoes" in globals() and not tabela_proporcoes.empty:
+        total_oabs_validas_unicas = int(tabela_proporcoes["oab"].nunique())
+
+        # 6) OAB válida com casos sigilosos (% sobre OABs únicas válidas)
+        oabs_com_sigilo = int((tabela_proporcoes["total_sigilosos"] > 0).sum())
+        pct_oab_com_sigilo = (oabs_com_sigilo / total_oabs_validas_unicas * 100) if total_oabs_validas_unicas > 0 else 0.0
+
+        # 7) OAB válida com casos exclusivamente não sigilosos (% sobre OABs únicas válidas)
+        oabs_exclusivamente_nao_sigilosos = int((tabela_proporcoes["total_sigilosos"] == 0).sum())
+        pct_oab_exclusivamente_nao_sigilosos = (oabs_exclusivamente_nao_sigilosos / total_oabs_validas_unicas * 100) if total_oabs_validas_unicas > 0 else 0.0
+
+        # 8–11) Classificação por quadrantes (mesmos cortes do gráfico)
+        media_proporcao = float(tabela_proporcoes["proporcao_media_sigilosos"].mean())
+        cond_direita = tabela_proporcoes["proporcao_media_sigilosos"] >= media_proporcao
+        cond_esquerda = ~cond_direita
+        cond_cima = tabela_proporcoes["variacao_total_sigilosos"] > 0
+        cond_baixo = ~cond_cima
+
+        especialistas_expansao = int((cond_direita & cond_cima).sum())
+        pct_expansao = (especialistas_expansao / total_oabs_validas_unicas * 100) if total_oabs_validas_unicas > 0 else 0.0
+
+        novos_focos = int((cond_esquerda & cond_cima).sum())
+        pct_novos = (novos_focos / total_oabs_validas_unicas * 100) if total_oabs_validas_unicas > 0 else 0.0
+
+        especialistas_transicao = int((cond_direita & cond_baixo).sum())
+        pct_transicao = (especialistas_transicao / total_oabs_validas_unicas * 100) if total_oabs_validas_unicas > 0 else 0.0
+
+        fora_do_foco = int((cond_esquerda & cond_baixo).sum())
+        pct_fora = (fora_do_foco / total_oabs_validas_unicas * 100) if total_oabs_validas_unicas > 0 else 0.0
+    else:
+        total_oabs_validas_unicas = 0
+        oabs_com_sigilo = oabs_exclusivamente_nao_sigilosos = 0
+        pct_oab_com_sigilo = pct_oab_exclusivamente_nao_sigilosos = 0.0
+        especialistas_expansao = novos_focos = especialistas_transicao = fora_do_foco = 0
+        pct_expansao = pct_novos = pct_transicao = pct_fora = 0.0
+
+    # --- PRINT organizado ---
+    print("\n" + "="*100)
+    print("MÉTRICAS - OAB / SIGILOS (2022–2024)")
+    print("="*100)
+    print(f"1) Total de registros de OAB: {_fmt_int(total_registros_oab)}")
+    print(f"2) Registros de OAB válidas: {_fmt_pct(pct_validas)}  ({_fmt_int(total_registros_validos)})")
+    print(f"3) Registros de OAB inválidas: {_fmt_pct(pct_invalidas)}  ({_fmt_int(total_invalidas)})")
+    print(f"4) Exemplos de formatos inválidos (até 10): {exemplos_invalidos}")
+    print(f"5) Total de registros de OAB válidas: {_fmt_int(total_registros_validos)}")
+    print(f"6) OAB válida com casos sigilosos: {_fmt_pct(pct_oab_com_sigilo)}  ({oabs_com_sigilo}/{total_oabs_validas_unicas})")
+    print(f"7) OAB válida com casos exclusivamente NÃO sigilosos: {_fmt_pct(pct_oab_exclusivamente_nao_sigilosos)}  ({oabs_exclusivamente_nao_sigilosos}/{total_oabs_validas_unicas})")
+    print(f"8) Especialistas em Expansão: {especialistas_expansao}  ({_fmt_pct(pct_expansao)} das OABs válidas)")
+    print(f"9) Novos Focos de Atuação: {novos_focos}  ({_fmt_pct(pct_novos)} das OABs válidas)")
+    print(f"10) Especialistas em Transição: {especialistas_transicao}  ({_fmt_pct(pct_transicao)} das OABs válidas)")
+    print(f"11) Fora do Foco: {fora_do_foco}  ({_fmt_pct(pct_fora)} das OABs válidas)")
+    print("="*100 + "\n")
+
+except Exception as e:
+    import traceback
+    print("[ERRO ao gerar métricas]", e)
+    traceback.print_exc()
 
 
 
