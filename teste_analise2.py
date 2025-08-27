@@ -285,20 +285,21 @@ if not df_validos.empty:
     # Dataframe para o gráfico de disperção
     tabela_dispersao = pd.merge(
         tabela_proporcoes,
-        tabela_final[['oab', 'sigilosos_2022', 'sigilosos_2023', 'sigilosos_2024',
-                      'nao_sigilosos_2022', 'nao_sigilosos_2023', 'nao_sigilosos_2024']],
+        tabela_final[['oab', 'proporcao_sigilosos_2022', 'proporcao_sigilosos_2023', 'proporcao_sigilosos_2024',
+                      'proporcao_nao_sigilosos_2022', 'proporcao_nao_sigilosos_2023', 'proporcao_nao_sigilosos_2024']],
         on='oab',
         how='left'
     )
     # Criar gráfico
     colunas_hover = [
-        'variacao_total_sigilosos',  # -> customdata[0]
-        'sigilosos_2022_x',          # -> customdata[1]
-        'sigilosos_2023_x',          # -> customdata[2]
-        'sigilosos_2024_x',          # -> customdata[3]
-        'nao_sigilosos_2022_x',      # -> customdata[4]
-        'nao_sigilosos_2023_x',      # -> customdata[5]
-        'nao_sigilosos_2024_x'       # -> customdata[6]
+        'variacao_total_sigilosos',            # -> customdata[0]
+        'proporcao_media_sigilosos',           # -> customdata[1]
+        'proporcao_sigilosos_2022_x',          # -> customdata[2]
+        'proporcao_sigilosos_2023_x',          # -> customdata[3]
+        'proporcao_sigilosos_2024_x',          # -> customdata[4]
+        'proporcao_nao_sigilosos_2022_x',      # -> customdata[5]
+        'proporcao_nao_sigilosos_2023_x',      # -> customdata[6]
+        'proporcao_nao_sigilosos_2024_x'       # -> customdata[7]
     ]
     fig_dispersao = px.scatter(
         tabela_dispersao,
@@ -334,14 +335,15 @@ if not df_validos.empty:
         marker=dict(size=10, color='#203864'),
         hovertemplate="<br>".join([
             "<b>OAB:</b> %{hovertext}",
-            "<b>Variação Total:</b> %{customdata[0]:.2f}%",
+            "<b>Variação Total Sigilosos:</b> %{customdata[0]:.2f}%",
+            "<b>Proporção Média de Sigilosos:</b> %{customdata[1]:.2f}%",
             "<b>--- <b>Contagem de Casos</b> ---",
-            "<b>Sigilosos 2022:</b> %{customdata[1]}",
-            "<b>Sigilosos 2023:</b> %{customdata[2]}",
-            "<b>Sigilosos 2024:</b> %{customdata[3]}",
-            "<b>Não Sigilosos 2022:</b> %{customdata[4]}",
-            "<b>Não Sigilosos 2023:</b> %{customdata[5]}",
-            "<b>Não Sigilosos 2024:</b> %{customdata[6]}",
+            "<b>Sigilosos 2022:</b> %{customdata[2]:.2f}%",
+            "<b>Sigilosos 2023:</b> %{customdata[3]:.2f}%",
+            "<b>Sigilosos 2024:</b> %{customdata[4]:.2f}%",
+            "<b>Não Sigilosos 2022:</b> %{customdata[5]:.2f}%",
+            "<b>Não Sigilosos 2023:</b> %{customdata[6]:.2f}%",
+            "<b>Não Sigilosos 2024:</b> %{customdata[7]:.2f}%",
             "<extra></extra>"
         ])
     )
@@ -371,7 +373,7 @@ if not df_validos.empty:
     fig_dispersao.update_yaxes(ticksuffix="%")
 
     # Exibição dos resultados
-    #fig_proporcoes.show()
+    fig_proporcoes.show()
     fig_dispersao.show()
 
 # --- MÉTRICAS ---
